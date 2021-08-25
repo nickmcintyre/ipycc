@@ -4,4 +4,4 @@ dependencies:
   - python=3.8
   - pip
   - pip:
-    - jupy5
+    - jupy5-mcintyre
