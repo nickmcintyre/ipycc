@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
+  <script src="https://assets.computiful.org/pre-alpha/skulpt.min.js"></script>
+  <script src="https://assets.computiful.org/pre-alpha/skulpt-stdlib.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script type="text/javascript">
+    // output functions are configurable.  This one just appends some text
+    // to a pre element.
+    function outf(text) { 
+      console.log(text); 
+    }
+
+    function builtinRead(x) {
+      if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
+        throw "File not found: '" + x + "'";
+      return Sk.builtinFiles["files"][x];
+    }
+
+    function uncaught(err) {
+      const lineno = err.traceback[0].lineno;
+      const msg = err.args.v[0].v;
+      throw new Error(msg + " on line " + lineno);
+    }
+  
+    function runCode() {
+      $('#sketch-holder').text('');
+      const prog = $('#sketch').html();
+      Sk.pre = "output";
+      Sk.configure({output:outf, read:builtinRead, uncaughtException:uncaught}); 
+      Sk.canvas = "sketch-holder";
+      const myPromise = Sk.misceval.asyncToPromise(function() {
+        return Sk.importMainWithBody("<stdin>", false, prog, true);
+      });
+      myPromise.then(function(mod) {
+        console.log(' ');
+      },
+      function(err) {
+        console.log(err.toString());
+      });
+    }
+  </script>
+</head>
+<body>
+  <pre id="output" style="display: none;"></pre>
+  <div id="sketch-holder"></div>
+  <script id="sketch" type="text/python">
+{{ code }}
+  </script>
+  <script type="text/javascript">
+    runCode();  
+  </script>
+</body>
+</html>
