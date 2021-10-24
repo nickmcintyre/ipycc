@@ -8,7 +8,9 @@ _template_path = os.path.join(sys.prefix, 'p5_data')
 
 env = Environment(
     loader=FileSystemLoader(_template_path),
-    autoescape=select_autoescape()
+    autoescape=select_autoescape(),
+    variable_start_string='{([',
+    variable_end_string='])}'
 )
 
 def transpile(code):
