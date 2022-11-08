@@ -1,4 +1,19 @@
 # jupy5
-> A simple way to sketch with Python and p5.js in Jupyter
+> A library for creative coding with Python in Jupyter
 
-This little experiment aims to simplify the process of teaching creative coding with Jupyter notebooks. It uses the [Skulpt](https://github.com/skulpt/skulpt/) Python implementation to create a wrapper for [p5.js](https://github.com/processing/p5.js).
+This library makes it easy to explore creative coding in Python using Jupyter notebooks. Its design is heavily inspired by [p5.js](https://github.com/processing/p5.js).
+
+```python
+from jupy5 import sketch
+
+with sketch(400, 400) as p5:
+  p5.background('dodgerblue')
+  p5.circle(200, 200, 50)
+  p5.pause(5)
+```
+
+jupy5 provides a simplified interface to the HTML canvas by wrapping [ipycanvas](https://ipycanvas.readthedocs.io/en/latest/index.html) in a beginner-friendly API.
+
+## Roadmap
+- 2D Primitives
+- Turtles
