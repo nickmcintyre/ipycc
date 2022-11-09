@@ -28,7 +28,7 @@ class Sketch:
 
     def remove(self):
         clear_output()
-    
+
     def stop(self):
         self._is_looping = False
         self.clear()
@@ -127,7 +127,6 @@ class Sketch:
                 with hold_canvas():
                     draw()
                 await asyncio.sleep(_DELAY)
-
 
     async def pause(self, secs):
         await asyncio.sleep(secs)
