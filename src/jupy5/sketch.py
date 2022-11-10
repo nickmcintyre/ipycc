@@ -70,8 +70,9 @@ class Sketch:
         self.stroke_weight(old_weight)
 
     def circle(self, x, y, d):
-        self.canvas.fill_circle(x, y, d)
-        self.canvas.stroke_circle(x, y, d)
+        r = 0.5 * d
+        self.canvas.fill_circle(x, y, r)
+        self.canvas.stroke_circle(x, y, r)
 
     def ellipse(self, x, y, w, h):
         # ellipse_mode == 'center'
@@ -113,8 +114,8 @@ class Sketch:
             self._is_looping = True
             self._start_time = time.time()
         if len(args) > 0 and type(args[0]) == int:
-            self.frame_count += 1
             while self._is_looping:
+                self.frame_count += 1
                 now = time.time()
                 if now - self._start_time > args[0]:
                     break
@@ -122,8 +123,8 @@ class Sketch:
                     draw()
                 await asyncio.sleep(_DELAY)
         else:
-            self.frame_count += 1
             while self._is_looping:
+                self.frame_count += 1
                 with hold_canvas():
                     draw()
                 await asyncio.sleep(_DELAY)

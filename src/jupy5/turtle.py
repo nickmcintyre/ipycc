@@ -1,20 +1,25 @@
 import asyncio
 from contextlib import contextmanager
 import math
-import time
 from .sketch import Sketch
 
 
 class Turtle:
-    def __init__(self, p5):
-        self._x = p5.width / 2
-        self._y = p5.height / 2
-        self._p5 = p5
-        self._angle = 0
-        self._pen_is_down = False
-        self._pen_color = 'black'
-        self._pen_size = 1
-        self._speed = 1
+    def __init__(self, width, height):
+        self._x = width * 0.5
+        self._y = height * 0.5
+        self._p5 = Sketch(width, height)
+        self.setheading(0)
+        self.setspeed(1)
+        self.penup()
+        self.pencolor('limegreen')
+        self.pensize(1)
+    
+    def _display(self):
+        self._p5.display()
+    
+    def _remove(self):
+        self._p5.remove()
 
     def xcor(self):
         return self._x
@@ -42,26 +47,23 @@ class Turtle:
         self._y = y
 
     def home(self):
-        self._x = self._p5.width / 2
-        self._y = self._p5.height / 2
+        self._x = self._p5.width * 0.5
+        self._y = self._p5.height * 0.5
         self._angle = 0
         self._pen_is_down = False
-        self._pen_color = 'black'
+        self._pen_color = 'limegreen'
         self._pen_size = 1
         self._speed = 1
         self._p5.stroke(self._pen_color)
         self._p5.stroke_weight(self._pen_size)
 
     def forward(self, d):
-        dt = 0.5 / self._speed
-        time.sleep(dt)
         x = self._x + d * math.cos(self._angle)
         y = self._y + d * math.sin(self._angle)
         if self._pen_is_down:
             self._p5.line(self._x, self._y, x, y)
         self._x = x
         self._y = y
-        time.sleep(dt)
 
     def backward(self, d):
         self.forward(-d)
@@ -99,10 +101,8 @@ class Turtle:
 
 @contextmanager
 def turtle(width, height):
-    p5 = Sketch(width, height)
-    t = Turtle(p5)
-    t.background('gainsboro')
-    t._p5.display()
+    t = Turtle(width, height)
+    t._display()
     yield t
-    t._p5.clear()
-    t._p5.remove()
+    t.clear()
+    t._remove()
