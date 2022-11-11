@@ -17,7 +17,7 @@ with turtle(400, 400) as t:
     for side in range(4):
         t.forward(100)
         t.left(90)
-        await t.pause(1)
+        await t.delay(1)
 ```
 
 ## Sketches
@@ -29,7 +29,7 @@ from jupy5 import sketch
 with sketch(400, 400) as p5:
     p5.background('dodgerblue')
     p5.circle(200, 200, 50)
-    await p5.pause(2)
+    await p5.delay(2)
 ```
 
 A dark blue square with ten circles in its center. The circles are drawn in white and move in synchrony.
