@@ -227,6 +227,36 @@ class Sketch:
         if not self._stroke_weight_set:
             self._stroke_weight_set = True
         self.canvas.line_width = weight
+    
+    # ========================================
+    #               Curves
+    # ========================================
+    
+    def bezier(self, x1, y1, x2, y2, x3, y3, x4, y4):
+        self.canvas.begin_path()
+        self.canvas.move_to(x1, y1)
+        self.canvas.bezier_curve_to(x2, y2, x3, y3, x4, y4)
+        self.canvas.stroke()
+    
+    def bezier_point(self, a, b, c, d, t):
+        adjusted_t = 1 - t
+        return (
+            pow(adjusted_t, 3) * a +
+            3 * pow(adjusted_t, 2) * t * b +
+            3 * adjusted_t * pow(t, 2) * c +
+            pow(t, 3) * d
+        )
+    
+    def bezier_tangent(self, a, b, c, d, t):
+        adjusted_t = 1 - t
+        return (
+            3 * d * pow(t, 2) -
+            3 * c * pow(t, 2) +
+            6 * c * adjusted_t * t -
+            6 * b * adjusted_t * t +
+            3 * b * pow(adjusted_t, 2) -
+            3 * a * pow(adjusted_t, 2)
+        )
 
     # ========================================
     #                Vertex
