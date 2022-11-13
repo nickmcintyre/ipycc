@@ -2,8 +2,8 @@ import asyncio
 from contextlib import contextmanager
 import math
 import time
-from IPython.display import display, clear_output
 from ipycanvas import Canvas, hold_canvas
+from IPython.display import display, clear_output
 
 
 class Sketch:
@@ -17,18 +17,40 @@ class Sketch:
     TWO_PI = math.tau
     DEGREES = 'degrees'
     RADIANS = 'radians'
+    NORMAL = 'normal'
+    ITALIC = 'italic'
+    BOLD = 'bold'
+    BOLDITALIC = 'bolditalic'
+    _DEFAULT_STROKE = 'black'
+    _DEFAULT_STROKE_WEIGHT = 1
+    _DEFAULT_FILL = 'white'
+    _DEFAULT_TEXT_FILL = 'black'
+    _DEFAULT_TEXT_WEIGHT = 0.3
+    _TRANSPARENT = '#00000000'
+    _DEFAULT_FONT = 'Arial'
+    _DEFAULT_FONT_SIZE = 12
+    _DEFAULT_FONT_STYLE = 'normal'
+    _DEFAULT_FONT_WEIGHT = 'normal'
 
     def __init__(self, width, height):
         self.width = width
         self.height = height
         self.canvas = Canvas(width=width, height=height)
-        self.canvas.fill_style = 'white'
-        self.canvas.stroke_style = 'black'
-        self.canvas.line_width = 1
+        self.canvas.fill_style = Sketch._DEFAULT_FILL
+        self.canvas.stroke_style = Sketch._DEFAULT_STROKE
+        self.canvas.line_width = Sketch._DEFAULT_STROKE_WEIGHT
         self._is_looping = False
+        self._fill_set = False
+        self._stroke_set = False
+        self._stroke_weight_set = False
         self.frame_count = 0
         self._start_time = 0
         self._vertices = []
+        self._font = Sketch._DEFAULT_FONT
+        self._font_size = Sketch._DEFAULT_FONT_SIZE
+        self._font_style = Sketch._DEFAULT_FONT_STYLE
+        self._font_weight = Sketch._DEFAULT_FONT_WEIGHT
+        self.canvas.font = f'{self._font_style} {self._font_weight} {self._font_size}px {self._font}'
 
     # ========================================
     #                Setting
@@ -38,28 +60,36 @@ class Sketch:
         old_fill = self.canvas.fill_style
         old_stroke = self.canvas.stroke_style
         old_weight = self.canvas.line_width
-        self.fill(color)
-        self.stroke(color)
-        self.stroke_weight(1)
+        self.canvas.fill_style = color
+        self.canvas.stroke_style = color
+        self.canvas.line_width = 1
         self.canvas.fill_rect(0, 0, self.width, self.height)
         self.canvas.stroke_rect(0, 0, self.width, self.height)
-        self.fill(old_fill)
-        self.stroke(old_stroke)
-        self.stroke_weight(old_weight)
+        self.canvas.fill_style = old_fill
+        self.canvas.stroke_style = old_stroke
+        self.canvas.line_width = old_weight
 
     def clear(self):
         self.canvas.clear()
 
     def fill(self, color):
+        if not self._fill_set:
+            self._fill_set = True
         self.canvas.fill_style = color
 
     def no_fill(self):
-        self.canvas.fill_style = '#00000000'
+        if not self._fill_set:
+            self._fill_set = True
+        self.canvas.fill_style = Sketch._TRANSPARENT
 
     def no_stroke(self):
-        self.canvas.stroke_style = '#00000000'
+        if not self._stroke_set:
+            self._stroke_set = True
+        self.canvas.stroke_style = Sketch._TRANSPARENT
 
     def stroke(self, color):
+        if not self._stroke_set:
+            self._stroke_set = True
         self.canvas.stroke_style = color
 
     def _display(self):
@@ -194,6 +224,8 @@ class Sketch:
     # ========================================
 
     def stroke_weight(self, weight):
+        if not self._stroke_weight_set:
+            self._stroke_weight_set = True
         self.canvas.line_width = weight
 
     # ========================================
@@ -243,6 +275,49 @@ class Sketch:
     def no_loop(self):
         self._is_looping = False
 
+    # ========================================
+    #                Typography
+    # ========================================
+
+    def text(self, text, x, y):
+        if self._fill_set:
+            self.canvas.fill_text(text, x, y)
+        else:
+            self.canvas.fill_style = Sketch._DEFAULT_TEXT_FILL
+            self.canvas.fill_text(text, x, y)
+            self.canvas.fill_style = Sketch._DEFAULT_FILL
+
+        if self._stroke_set:
+            if self._stroke_weight_set:
+                self.canvas.stroke_text(text, x, y)
+            else:
+                self.canvas.line_width = Sketch._DEFAULT_TEXT_WEIGHT
+                self.canvas.stroke_text(text, x, y)
+                self.canvas.line_width = Sketch._DEFAULT_STROKE_WEIGHT
+    
+    def text_font(self, font):
+        self._font = font
+        self.canvas.font = self.canvas.font = f'{self._font_style} {self._font_weight} {self._font_size}px {self._font}'
+    
+    def text_size(self, size):
+        self._font_size = size
+        self.canvas.font = self.canvas.font = f'{self._font_style} {self._font_weight} {self._font_size}px {self._font}'
+    
+    def text_style(self, style):
+        if style == Sketch.NORMAL:
+            self._font_weight = Sketch.NORMAL
+            self._font_style = Sketch.NORMAL
+        elif style == Sketch.ITALIC:
+            self._font_weight = Sketch.NORMAL
+            self._font_style = Sketch.ITALIC
+        elif style == Sketch.BOLD:
+            self._font_weight = Sketch.BOLD
+            self._font_style = Sketch.NORMAL
+        elif style == Sketch.BOLDITALIC:
+            self._font_weight = Sketch.BOLD
+            self._font_style = Sketch.ITALIC
+        self.canvas.font = self.canvas.font = f'{self._font_style} {self._font_weight} {self._font_size}px {self._font}'
+        
 
 @contextmanager
 def sketch(width, height):
