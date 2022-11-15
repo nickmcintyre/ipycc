@@ -301,6 +301,7 @@ class Sketch(Canvas):
                     self._vertices.clear()
                 await asyncio.sleep(Sketch.DELAY)
         asyncio.create_task(loop())
+        self._display()
 
     def stop(self):
         self._is_looping = False
