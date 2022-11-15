@@ -3,7 +3,16 @@ from .sketch import Sketch
 
 
 class Turtle(Sketch):
-    def __init__(self, width, height):
+    def __init__(self, *args):
+        if len(args) == 0:
+            width = 200
+            height = 200
+        elif len(args) == 1:
+            width = args[0]
+            height = args[0]
+        elif len(args) == 2:
+            width = args[0]
+            height = args[1]
         super().__init__(width, height)
         self.home()
         self.end_poly()

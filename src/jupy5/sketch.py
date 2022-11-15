@@ -1,15 +1,9 @@
 import asyncio
 import math
-from threading import Event, Thread
 import time
 from ipycanvas import Canvas, hold_canvas
-from ipyevents import Event as IPyEvent
+from ipyevents import Event
 from IPython.display import display, clear_output
-try:
-    import pyolite
-    _is_jupyterlite = type(pyolite.__version__) == str
-except:
-    _is_jupyterlite = False
 
 
 class Sketch(Canvas):
@@ -40,7 +34,6 @@ class Sketch(Canvas):
 
     def __init__(self, width, height):
         super().__init__(width=width, height=height)
-        self._is_jupyterlite = _is_jupyterlite
         self.fill_style = Sketch._DEFAULT_FILL
         self.stroke_style = Sketch._DEFAULT_STROKE
         self.line_width = Sketch._DEFAULT_STROKE_WEIGHT
@@ -56,9 +49,8 @@ class Sketch(Canvas):
         self._font_style = Sketch._DEFAULT_FONT_STYLE
         self._font_weight = Sketch._DEFAULT_FONT_WEIGHT
         self.font = f'{self._font_style} {self._font_weight} {self._font_size}px {self._font}'
-        self._events = IPyEvent(
+        self._events = Event(
             source=self, watched_events=['keydown', 'keyup'])
-        self._stopped = Event()
         self.pmouse_x = 0
         self.pmouse_y = 0
         self.mouse_x = 0
@@ -68,12 +60,6 @@ class Sketch(Canvas):
         self.key_is_pressed = False
         self._keys_pressed = set()
         self._register_base_events()
-    
-    def __enter__(self):
-        self._display()
-    
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.remove()
 
     # ========================================
     #                Setting
@@ -301,35 +287,6 @@ class Sketch(Canvas):
             self.frame_count = 0
             self._is_looping = True
             self._start_time = time.time()
-            self._stopped.clear()
-        timed_loop = len(args) > 0 and type(args[0]) == int
-
-        def loop():
-            while not self._stopped.wait(Sketch.DELAY):
-                self.frame_count += 1
-                if timed_loop:
-                    now = time.time()
-                    if now - self._start_time > args[0]:
-                        self._stopped.set()
-                        self._is_looping = False
-                with hold_canvas():
-                    draw()
-                    self._vertices.clear()
-        Thread(target=loop).start()
-
-    def stop(self):
-        self._stopped.set()
-        self._is_looping = False
-
-    async def delay(self, secs):
-        await asyncio.sleep(secs)
-
-    # FIXME: events don't work in JupyterLite
-    async def loop(self, draw, *args):
-        if not self._is_looping:
-            self.frame_count = 0
-            self._is_looping = True
-            self._start_time = time.time()
         timed_loop = len(args) > 0 and type(args[0]) == int
 
         async def loop():
@@ -343,9 +300,13 @@ class Sketch(Canvas):
                     draw()
                     self._vertices.clear()
                 await asyncio.sleep(Sketch.DELAY)
-            await asyncio.sleep(Sketch.DELAY)
-        draw_loop = asyncio.create_task(loop())
-        await draw_loop
+        asyncio.create_task(loop())
+
+    def stop(self):
+        self._is_looping = False
+
+    async def delay(self, secs):
+        await asyncio.sleep(secs)
 
     def no_loop(self):
         self._is_looping = False
