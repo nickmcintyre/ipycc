@@ -1,2 +1,2 @@
-from .sketch import sketch
-from .turtle import turtle
+from .sketch import Sketch
+from .turtle import Turtle
