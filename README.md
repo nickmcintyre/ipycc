@@ -10,14 +10,16 @@ from jupy5 import Turtle
 
 
 t = Turtle()
-t.bgcolor('dodgerblue')
-t.pencolor('limegreen')
-t.pensize(4)
+t.draw()
+t.bgcolor('midnightblue')
+t.pencolor('ghostwhite')
 t.pendown()
-for side in range(4):
-    t.forward(50)
+side = 5
+while side < t.width:
+    t.forward(side)
     t.left(90)
-t # displays beneath current code cell
+    await t.delay(0.1)
+    side += 5
 ```
 
 ## Sketches
@@ -29,7 +31,7 @@ from jupy5 import Sketch
 p5 = Sketch(400, 400)
 p5.background('dodgerblue')
 p5.circle(200, 200, 50)
-p5 # displays beneath current code cell
+p5.draw()
 ```
 
 A dark blue square with ten circles in its center. The circles are drawn in white and move in synchrony.
@@ -60,11 +62,11 @@ class Bug:
         p5.circle(self.x, self.y, 2 * self.r)
     
     def update(self):
+        self.angle += self.dadt * self.dt
         dx = math.cos(self.angle)
         dy = math.sin(self.angle)
         self.x += dx
         self.y += dy
-        self.angle += self.dadt * self.dt
     
     def sync(self, bugs):
         self.dadt = self.freq
@@ -82,7 +84,7 @@ def draw():
         bug.update()
         bug.render()
 
-p5.draw(draw, 10) # displays beneath current code cell
+p5.draw(draw, 10) # loop for 10 seconds
 ```
 
 jupy5 provides a simplified interface to the HTML canvas by wrapping [ipycanvas](https://ipycanvas.readthedocs.io/en/latest/index.html) in a beginner-friendly API.
