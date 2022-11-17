@@ -3,8 +3,8 @@ import math
 import time
 from ipycanvas import Canvas, hold_canvas
 from ipyevents import Event
-from IPython.display import display, clear_output
-from ipywidgets import Image
+from IPython.display import display
+import ipywidgets as widgets
 
 
 class Sketch:
@@ -63,6 +63,7 @@ class Sketch:
         self.key_is_pressed = False
         self._keys_pressed = set()
         self._register_base_events()
+        self._widgets = []
 
     # ========================================
     #                 Color
@@ -105,7 +106,9 @@ class Sketch:
         self.canvas.clear()
 
     def remove(self):
-        clear_output()
+        self.canvas.close()
+        for w in self._widgets:
+            w.close()
 
     # ========================================
     #              2D Primitives
@@ -293,7 +296,13 @@ class Sketch:
     # ========================================
 
     def draw(self, *args):
-        display(self.canvas)
+        canvas_layout = widgets.Layout(
+                    width=f'{self.width}px',
+                    height=f'{self.height}px')
+        canvas_box = widgets.Box([self.canvas], layout=canvas_layout)
+        widget_box = widgets.VBox(self._widgets)
+        sketch_box = widgets.HBox([canvas_box, widget_box])
+        display(sketch_box)
         if len(args) == 0:
             return
         draw = args[0]
@@ -326,6 +335,75 @@ class Sketch:
         self._is_looping = False
 
     # ========================================
+    #                 Input
+    # ========================================
+
+    def create_input(self, *args):
+        input = widgets.Text()
+        if len(args) > 0:
+            input.description = args[0]
+        if len(args) > 1:
+            input.value = args[1]
+        self._widgets.append(input)
+        return input
+    
+    def create_slider(self, min, max, *args):
+        slider = widgets.FloatSlider(min=min, max=max)
+        if len(args) > 0:
+            slider.value = args[0]
+        if len(args) > 1:
+            slider.step = args[1]
+        if len(args) > 2:
+            slider.description = args[2]
+        self._widgets.append(slider)
+        return slider
+    
+    def create_button(self, *args):
+        button = widgets.Button()
+        if len(args) > 0:
+            button.description = args[0]
+        if len(args) > 1:
+            button.icon = args[1]
+        self._widgets.append(button)
+        return button
+    
+    def create_checkbox(self, *args):
+        checkbox = widgets.Checkbox(indent=False)
+        if len(args) > 0:
+            checkbox.value = args[0]
+        if len(args) > 1:
+            checkbox.description = args[1]
+        self._widgets.append(checkbox)
+        return checkbox
+    
+    def create_select(self, options, *args):
+        select = widgets.Select(options=options)
+        if len(args) > 0:
+            select.value = args[0]
+        if len(args) > 1:
+            select.description = args[1]
+        self._widgets.append(select)
+        return select
+    
+    def create_radio(self, options, *args):
+        radio = widgets.RadioButtons(options=options)
+        if len(args) > 0:
+            radio.value = args[0]
+        if len(args) > 1:
+            radio.description = args[1]
+        self._widgets.append(radio)
+        return radio
+    
+    def create_color_picker(self, *args):
+        picker = widgets.ColorPicker()
+        if len(args) > 0:
+            picker.value = args[0]
+        if len(args) > 1:
+            picker.description = args[1]
+        self._widgets.append(picker)
+        return picker
+
+    # ========================================
     #                 Events
     # ========================================
 
@@ -354,7 +432,7 @@ class Sketch:
     # ========================================
 
     def load_image(self, path):
-        return Image.from_file(path)
+        return widgets.Image.from_file(path)
 
     def image(self, img, x, y, *args):
         if len(args) == 0:
