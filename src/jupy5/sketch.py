@@ -5,6 +5,7 @@ from ipycanvas import Canvas, hold_canvas
 from ipyevents import Event
 from IPython.display import display
 import ipywidgets as widgets
+import numpy as np
 
 
 class Sketch:
@@ -64,12 +65,15 @@ class Sketch:
         self._keys_pressed = set()
         self._register_base_events()
         self._widgets = []
+        self._matrix = np.eye(3)
 
     # ========================================
     #                 Color
     # ========================================
 
     def background(self, color):
+        self.canvas.save()
+        self.canvas.reset_transform()
         old_fill = self.canvas.fill_style
         old_stroke = self.canvas.stroke_style
         old_weight = self.canvas.line_width
@@ -81,6 +85,7 @@ class Sketch:
         self.canvas.fill_style = old_fill
         self.canvas.stroke_style = old_stroke
         self.canvas.line_width = old_weight
+        self.canvas.restore()
 
     def fill(self, color):
         if not self._fill_set:
@@ -297,8 +302,8 @@ class Sketch:
 
     def draw(self, *args):
         canvas_layout = widgets.Layout(
-                    width=f'{self.width}px',
-                    height=f'{self.height}px')
+            width=f'{self.width}px',
+            height=f'{self.height}px')
         canvas_box = widgets.Box([self.canvas], layout=canvas_layout)
         widget_box = widgets.VBox(self._widgets)
         sketch_box = widgets.HBox([canvas_box, widget_box])
@@ -322,6 +327,7 @@ class Sketch:
                 with hold_canvas():
                     draw()
                     self._vertices.clear()
+                self.reset_matrix()
                 await asyncio.sleep(Sketch.DELAY)
         asyncio.create_task(loop())
 
@@ -346,7 +352,7 @@ class Sketch:
             input.value = args[1]
         self._widgets.append(input)
         return input
-    
+
     def create_slider(self, min, max, *args):
         slider = widgets.FloatSlider(min=min, max=max)
         if len(args) > 0:
@@ -357,7 +363,7 @@ class Sketch:
             slider.description = args[2]
         self._widgets.append(slider)
         return slider
-    
+
     def create_button(self, *args):
         button = widgets.Button()
         if len(args) > 0:
@@ -366,7 +372,7 @@ class Sketch:
             button.icon = args[1]
         self._widgets.append(button)
         return button
-    
+
     def create_checkbox(self, *args):
         checkbox = widgets.Checkbox(indent=False)
         if len(args) > 0:
@@ -375,7 +381,7 @@ class Sketch:
             checkbox.description = args[1]
         self._widgets.append(checkbox)
         return checkbox
-    
+
     def create_select(self, options, *args):
         select = widgets.Select(options=options)
         if len(args) > 0:
@@ -384,7 +390,7 @@ class Sketch:
             select.description = args[1]
         self._widgets.append(select)
         return select
-    
+
     def create_radio(self, options, *args):
         radio = widgets.RadioButtons(options=options)
         if len(args) > 0:
@@ -393,7 +399,7 @@ class Sketch:
             radio.description = args[1]
         self._widgets.append(radio)
         return radio
-    
+
     def create_color_picker(self, *args):
         picker = widgets.ColorPicker()
         if len(args) > 0:
@@ -402,6 +408,47 @@ class Sketch:
             picker.description = args[1]
         self._widgets.append(picker)
         return picker
+
+    # ========================================
+    #               Transform
+    # ========================================
+
+    def apply_matrix(self, a, b, c, d, e, f):
+        m = np.array(((a, c, e), (b, d, f), (0, 0, 1)))
+        self._matrix = m @ self._matrix
+        self.canvas.transform(a, b, c, d, e, f)
+
+    def reset_matrix(self):
+        self._matrix = np.eye(3)
+        self.canvas.reset_transform()
+
+    def rotate(self, angle):
+        ca, sa = math.cos(angle), math.sin(angle)
+        m = np.array(((ca, -sa, 0), (sa, ca, 0), (0, 0, 1)))
+        self._matrix = m @ self._matrix
+        self.canvas.rotate(angle)
+
+    def scale(self, x, *args):
+        if len(args) == 0:
+            m = np.array(((x, 0, 0), (0, x, 0), (0, 0, 1)))
+            self._matrix = m @ self._matrix
+            self.canvas.scale(x)
+        else:
+            y = args[0]
+            m = np.array(((x, 0, 0), (0, y, 0), (0, 0, 1)))
+            self._matrix = m @ self._matrix
+            self.canvas.scale(x, y=y)
+
+    def shear_x(self, angle):
+        self.apply_matrix(1, 0, math.tan(angle), 1, 0, 0)
+
+    def shear_y(self, angle):
+        self.apply_matrix(1, math.tan(angle), 0, 1, 0, 0)
+
+    def translate(self, x, y):
+        m = np.array(((0, 0, x), (0, 0, y), (0, 0, 1)))
+        self._matrix = m @ self._matrix
+        self.canvas.translate(x, y)
 
     # ========================================
     #                 Events
