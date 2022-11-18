@@ -38,7 +38,7 @@ A dark blue square with ten circles in its center. The circles are drawn in whit
 ```python
 import math
 from random import uniform
-from jupy5 import sketch
+from jupy5 import Sketch
 
 
 p5 = Sketch(400, 400)
