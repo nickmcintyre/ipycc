@@ -1,7 +1,7 @@
 # jupy5
-> A library for creative coding in Python using Jupyter
+> A Python package for creative coding in Jupyter
 
-This library makes it easy to explore creative coding in Python using Jupyter notebooks. Its design is heavily inspired by [p5.js](https://github.com/processing/p5.js) and [Turtle graphics](https://docs.python.org/3/library/turtle.html) from the Python standard library.
+This package makes it easy to explore creative coding in Python using Jupyter notebooks. Its design is heavily inspired by [p5.js](https://github.com/processing/p5.js) and [Turtle graphics](https://docs.python.org/3/library/turtle.html) from the Python standard library.
 
 ## Turtles
 A light blue square with a smaller square outlined in green at its center. The square is drawn one side at a time.
@@ -53,7 +53,7 @@ class Bug:
         self.r = 5
         self.angle = uniform(0, math.tau)
         self.freq = uniform(5, 10)
-        self.dadt = 0
+        self.da_dt = 0
         self.dt = 0.01
     
     def render(self):
@@ -62,16 +62,16 @@ class Bug:
         p5.circle(self.x, self.y, 2 * self.r)
     
     def update(self):
-        self.angle += self.dadt * self.dt
+        self.angle += self.da_dt * self.dt
         dx = math.cos(self.angle)
         dy = math.sin(self.angle)
         self.x += dx
         self.y += dy
     
     def sync(self, bugs):
-        self.dadt = self.freq
+        self.da_dt = self.freq
         for bug in bugs:
-            self.dadt += k_n * math.sin(bug.angle - self.angle)
+            self.da_dt += k_n * math.sin(bug.angle - self.angle)
 
 bugs = [Bug() for _ in range(num_bugs)]
 
@@ -88,7 +88,3 @@ p5.draw(draw, 10) # loop for 10 seconds
 ```
 
 jupy5 provides a simplified interface to the HTML canvas by wrapping [ipycanvas](https://ipycanvas.readthedocs.io/en/latest/index.html) in a beginner-friendly API.
-
-## Roadmap
-- 2D Primitives
-- Turtles
