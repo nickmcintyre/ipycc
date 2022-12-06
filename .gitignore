@@ -3,3 +3,4 @@
 dist
 src/jupy5.egg*
 .ipynb_checkpoints
+__pycache__
