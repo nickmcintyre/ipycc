@@ -17,7 +17,7 @@ class Turtle:
             self.width = args[0]
             self.height = args[1]
         self._bg = Sketch(self.width, self.height)
-        self._bgcolor = '#00000000'
+        self._bgcolor = 'white'
         self._p5 = Sketch(self.width, self.height)
         self.reset()
         self.end_poly()
@@ -25,7 +25,11 @@ class Turtle:
     def _render(self):
         with hold_canvas():
             self._bg.background(self._bgcolor)
+            # TODO: implement push() and pop()
+            self._bg.scale(1, -1)
+            self._bg.translate(0, -self.height)
             self._bg.image(self._p5.canvas, 0, 0)
+            self._bg.reset_matrix()
 
     def draw(self):
         self._render()
@@ -48,16 +52,39 @@ class Turtle:
         if self._is_drawing_poly:
             self._p5.vertex(x, y)
         self._render()
+    
+    def fd(self, d):
+        self.forward(d)
 
     def backward(self, d):
         self.forward(-d)
+    
+    def bk(self, d):
+        self.forward(-d)
+    
+    def back(self, d):
+        self.forward(-d)
 
     def right(self, angle):
-        self._angle += math.radians(angle)
-
-    def left(self, angle):
+        self._angle -= math.radians(angle)
+    
+    def rt(self, angle):
         self._angle -= math.radians(angle)
 
+    def left(self, angle):
+        self._angle += math.radians(angle)
+    
+    def lt(self, angle):
+        self._angle += math.radians(angle)
+
+    def goto(self, x, y):
+        self._x = x
+        self._y = y
+    
+    def setpos(self, x, y):
+        self._x = x
+        self._y = y
+    
     def setposition(self, x, y):
         self._x = x
         self._y = y
@@ -69,6 +96,9 @@ class Turtle:
         self._y = y
 
     def setheading(self, angle):
+        self._angle = math.radians(angle)
+    
+    def seth(self, angle):
         self._angle = math.radians(angle)
 
     def home(self):
@@ -89,7 +119,7 @@ class Turtle:
         return self._y
 
     def heading(self):
-        return math.degrees(self._angle)
+        return math.degrees(self._angle) % 360
 
     # ========================================
     #               Pen Control
@@ -121,8 +151,8 @@ class Turtle:
     def reset(self):
         self.clear()
         self.home()
-        self._pen_is_down = False
-        self._pen_color = 'limegreen'
+        self._pen_is_down = True
+        self._pen_color = 'black'
         self._pen_size = 1
         self._speed = 1
         self._p5.stroke(self._pen_color)
