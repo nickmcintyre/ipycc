@@ -1,6 +1,7 @@
 .DS_Store
 .vscode
 dist
-src/jupy5.egg*
+*.egg*
 .ipynb_checkpoints
 __pycache__
+.pytest_cache

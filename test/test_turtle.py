@@ -1,4 +1,4 @@
-from jupy5 import Turtle
+from ipycc import Turtle
 
 
 def test_constructor():

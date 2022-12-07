@@ -1,4 +1,4 @@
-from jupy5 import Sketch
+from ipycc import Sketch
 
 
 def test_constructor():

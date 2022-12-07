@@ -1,4 +1,4 @@
-# jupy5
+# ipycc
 > A Python package for creative coding in Jupyter
 
 This package makes it easy to explore creative coding in Python using Jupyter notebooks. Its design is heavily inspired by [p5.js](https://github.com/processing/p5.js) and [Turtle graphics](https://docs.python.org/3/library/turtle.html) from the Python standard library.
@@ -6,7 +6,7 @@ This package makes it easy to explore creative coding in Python using Jupyter no
 ## Turtles
 A light blue square with a smaller square outlined in green at its center. The square is drawn one side at a time.
 ```python
-from jupy5 import Turtle
+from ipycc import Turtle
 
 
 t = Turtle()
@@ -25,7 +25,7 @@ while side < t.width:
 ## Sketches
 A light blue square with a circle in its center. The circle is drawn with a white center and black edge.
 ```python
-from jupy5 import Sketch
+from ipycc import Sketch
 
 
 p5 = Sketch(400, 400)
@@ -38,7 +38,7 @@ A dark blue square with ten circles in its center. The circles are drawn in whit
 ```python
 import math
 from random import uniform
-from jupy5 import Sketch
+from ipycc import Sketch
 
 
 p5 = Sketch(400, 400)
@@ -87,4 +87,4 @@ def draw():
 p5.draw(draw, 10) # loop for 10 seconds
 ```
 
-jupy5 provides a simplified interface to the HTML canvas by wrapping [ipycanvas](https://ipycanvas.readthedocs.io/en/latest/index.html) in a beginner-friendly API.
+ipycc provides a simplified interface to the HTML canvas by wrapping [ipycanvas](https://ipycanvas.readthedocs.io/en/latest/index.html) in a beginner-friendly API.
