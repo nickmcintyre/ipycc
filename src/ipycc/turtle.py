@@ -78,22 +78,39 @@ class Turtle:
         self._angle += math.radians(angle)
 
     def goto(self, x, y):
-        self._x = x
-        self._y = y
+        next_x = self.width * 0.5 + x
+        next_y = self.height * 0.5 + y
+        if self._pen_is_down:
+            self._p5.line(self._x, self._y, next_x, next_y)
+        if self._is_drawing_poly:
+            self._p5.vertex(next_x, next_y)
+        self._x = next_x
+        self._y = next_y
+        self._render()
     
     def setpos(self, x, y):
-        self._x = x
-        self._y = y
+        self.goto(x, y)
     
     def setposition(self, x, y):
-        self._x = x
-        self._y = y
+        self.goto(x, y)
 
     def setx(self, x):
-        self._x = x
+        next_x = self.width * 0.5 + x
+        if self._pen_is_down:
+            self._p5.line(self._x, self._y, next_x, self._y)
+        if self._is_drawing_poly:
+            self._p5.vertex(next_x, self._y)
+        self._x = next_x
+        self._render()
 
     def sety(self, y):
-        self._y = y
+        next_y = 0.5 * self.height + y
+        if self._pen_is_down:
+            self._p5.line(self._x, self._y, self._x, next_y)
+        if self._is_drawing_poly:
+            self._p5.vertex(self._x, next_y)
+        self._y = next_y
+        self._render()
 
     def setheading(self, angle):
         self._angle = math.radians(angle)
@@ -102,21 +119,20 @@ class Turtle:
         self._angle = math.radians(angle)
 
     def home(self):
-        self._x = self._p5.width * 0.5
-        self._y = self._p5.height * 0.5
-        self._angle = 0
+        self.goto(0, 0)
+        self.seth(0)
 
     def speed(self, speed):
         self._speed = speed
 
     def position(self):
-        return (self._x, self._y)
+        return (self.xcor(), self.ycor())
 
     def xcor(self):
-        return self._x
+        return self._x - self.width * 0.5
 
     def ycor(self):
-        return self._y
+        return self._y - self.height * 0.5
 
     def heading(self):
         return math.degrees(self._angle) % 360
@@ -147,10 +163,9 @@ class Turtle:
 
     def clear(self):
         self._p5.clear()
+        self._render()
 
     def reset(self):
-        self.clear()
-        self.home()
         self._pen_is_down = True
         self._pen_color = 'black'
         self._pen_size = 1
@@ -158,10 +173,13 @@ class Turtle:
         self._p5.stroke(self._pen_color)
         self._p5.stroke_weight(self._pen_size)
         self._is_filling = False
-        self._fill_color = '#00000000'
+        self._fill_color = 'white'
         self._p5.no_fill()
         self._is_drawing_poly = False
-        self._render()
+        self._x = self.width * 0.5
+        self._y = self.height * 0.5
+        self._angle = 0
+        self.clear()
 
     def begin_poly(self):
         if self._pen_is_down:
