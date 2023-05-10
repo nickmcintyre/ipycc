@@ -88,3 +88,6 @@ p5.draw(draw, 10) # loop for 10 seconds
 ```
 
 ipycc provides a simplified interface to the HTML canvas by wrapping [ipycanvas](https://ipycanvas.readthedocs.io/en/latest/index.html) in a beginner-friendly API.
+
+## Acknowledgements
+- Portions of the `Sketch` module are lovingly borrowed and adapted from their p5.js counterparts.
