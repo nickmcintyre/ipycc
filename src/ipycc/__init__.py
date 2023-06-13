@@ -1,2 +1,2 @@
-from .sketch import Sketch
-from .turtle import Turtle
+from .api.sketch import Sketch
+from .api.turtle import Turtle

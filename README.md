@@ -9,16 +9,17 @@ A light blue square with a smaller square outlined in green at its center. The s
 from ipycc import Turtle
 
 
-t = Turtle()
-t.draw()
-t.bgcolor('midnightblue')
-t.pencolor('ghostwhite')
-t.pendown()
+ted = Turtle()
+ted.draw()
+
+ted.bgcolor("midnightblue")
+ted.pencolor("ghostwhite")
+ted.pendown()
 side = 5
-while side < t.width:
-    t.forward(side)
-    t.left(90)
-    await t.delay(0.1)
+while side < ted.width:
+    ted.fd(side)
+    ted.lt(90)
+    await ted.delay(0.1)
     side += 5
 ```
 
@@ -29,9 +30,9 @@ from ipycc import Sketch
 
 
 p5 = Sketch(400, 400)
-p5.background('dodgerblue')
+p5.background("dodgerblue")
 p5.circle(200, 200, 50)
-p5.draw()
+p5.run_sketch()
 ```
 
 A dark blue square with ten circles in its center. The circles are drawn in white and move in synchrony.
@@ -57,7 +58,7 @@ class Bug:
         self.dt = 0.01
     
     def render(self):
-        p5.fill('ghostwhite')
+        p5.fill("ghostwhite")
         p5.no_stroke()
         p5.circle(self.x, self.y, 2 * self.r)
     
@@ -76,7 +77,7 @@ class Bug:
 bugs = [Bug() for _ in range(num_bugs)]
 
 def draw():
-    p5.background('#1919706F')
+    p5.background("#1919706F")
     for bug in bugs:
         bug.sync(bugs)
     
@@ -84,10 +85,12 @@ def draw():
         bug.update()
         bug.render()
 
-p5.draw(draw, 10) # loop for 10 seconds
+# Loop for 10 seconds.
+p5.run_sketch(draw, 10) 
 ```
 
 ipycc provides a simplified interface to the HTML canvas by wrapping [ipycanvas](https://ipycanvas.readthedocs.io/en/latest/index.html) in a beginner-friendly API.
 
 ## Acknowledgements
-- Portions of the `Sketch` module are lovingly borrowed and adapted from their p5.js counterparts.
+- Portions of the `Sketch` class are lovingly borrowed from their [p5.js](https://p5js.org) and [proceso](https://proceso.cc) counterparts.
+- Portions of the `Turtle` class are lovingly borrowed from their standard library counterparts.

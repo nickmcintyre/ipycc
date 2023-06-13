@@ -9,7 +9,6 @@ import numpy as np
 
 
 class Sketch:
-
     # Constants
     DELAY = 0.02
     HALF_PI = math.pi * 0.5
@@ -17,22 +16,22 @@ class Sketch:
     QUARTER_PI = math.pi * 0.25
     TAU = math.tau
     TWO_PI = math.tau
-    DEGREES = 'degrees'
-    RADIANS = 'radians'
-    NORMAL = 'normal'
-    ITALIC = 'italic'
-    BOLD = 'bold'
-    BOLDITALIC = 'bolditalic'
-    _DEFAULT_STROKE = 'black'
+    DEGREES = "degrees"
+    RADIANS = "radians"
+    NORMAL = "normal"
+    ITALIC = "italic"
+    BOLD = "bold"
+    BOLDITALIC = "bolditalic"
+    _DEFAULT_STROKE = "black"
     _DEFAULT_STROKE_WEIGHT = 1
-    _DEFAULT_FILL = 'white'
-    _DEFAULT_TEXT_FILL = 'black'
+    _DEFAULT_FILL = "white"
+    _DEFAULT_TEXT_FILL = "black"
     _DEFAULT_TEXT_WEIGHT = 0.3
-    _TRANSPARENT = '#00000000'
-    _DEFAULT_FONT = 'Arial'
+    _TRANSPARENT = "#00000000"
+    _DEFAULT_FONT = "Arial"
     _DEFAULT_FONT_SIZE = 12
-    _DEFAULT_FONT_STYLE = 'normal'
-    _DEFAULT_FONT_WEIGHT = 'normal'
+    _DEFAULT_FONT_STYLE = "normal"
+    _DEFAULT_FONT_WEIGHT = "normal"
 
     def __init__(self, width, height):
         self.width = width
@@ -42,8 +41,8 @@ class Sketch:
         self.canvas.stroke_style = Sketch._DEFAULT_STROKE
         self.canvas.line_width = Sketch._DEFAULT_STROKE_WEIGHT
         self._is_looping = False
-        self._fill_set = False
-        self._stroke_set = False
+        self._is_fill_set = False
+        self._is_stroke_set = False
         self._stroke_weight_set = False
         self.frame_count = 0
         self._start_time = 0
@@ -52,16 +51,17 @@ class Sketch:
         self._font_size = Sketch._DEFAULT_FONT_SIZE
         self._font_style = Sketch._DEFAULT_FONT_STYLE
         self._font_weight = Sketch._DEFAULT_FONT_WEIGHT
-        self.canvas.font = f'{self._font_style} {self._font_weight} {self._font_size}px {self._font}'
-        self._events = Event(
-            source=self.canvas, watched_events=['keydown', 'keyup'])
+        self.canvas.font = (
+            f"{self._font_style} {self._font_weight} {self._font_size}px {self._font}"
+        )
+        self._events = Event(source=self.canvas, watched_events=["keydown", "keyup"])
         self.pmouse_x = 0
         self.pmouse_y = 0
         self.mouse_x = 0
         self.mouse_y = 0
-        self.key = ''
-        self.key_code = ''
-        self.key_is_pressed = False
+        self.key = ""
+        self.key_code = ""
+        self.is_key_pressed = False
         self._keys_pressed = set()
         self._register_base_events()
         self._widgets = []
@@ -88,23 +88,23 @@ class Sketch:
         self.canvas.restore()
 
     def fill(self, color):
-        if not self._fill_set:
-            self._fill_set = True
+        if not self._is_fill_set:
+            self._is_fill_set = True
         self.canvas.fill_style = color
 
     def no_fill(self):
-        if not self._fill_set:
-            self._fill_set = True
+        if not self._is_fill_set:
+            self._is_fill_set = True
         self.canvas.fill_style = Sketch._TRANSPARENT
 
     def no_stroke(self):
-        if not self._stroke_set:
-            self._stroke_set = True
+        if not self._is_stroke_set:
+            self._is_stroke_set = True
         self.canvas.stroke_style = Sketch._TRANSPARENT
 
     def stroke(self, color):
-        if not self._stroke_set:
-            self._stroke_set = True
+        if not self._is_stroke_set:
+            self._is_stroke_set = True
         self.canvas.stroke_style = color
 
     def clear(self):
@@ -134,14 +134,14 @@ class Sketch:
 
         # Return rotated waypoints.
         return {
-            'ax': round(math.cos(start), 7),
-            'ay': round(math.sin(start), 7),
-            'bx': round((lam * cos_phi + mu * sin_phi), 7),
-            'by': round((lam * sin_phi - mu * cos_phi), 7),
-            'cx': round((lam * cos_phi - mu * sin_phi), 7),
-            'cy': round((lam * sin_phi + mu * cos_phi), 7),
-            'dx': round(math.cos(start + size), 7),
-            'dy': round(math.sin(start + size), 7),
+            "ax": round(math.cos(start), 7),
+            "ay": round(math.sin(start), 7),
+            "bx": round((lam * cos_phi + mu * sin_phi), 7),
+            "by": round((lam * sin_phi - mu * cos_phi), 7),
+            "cx": round((lam * cos_phi - mu * sin_phi), 7),
+            "cy": round((lam * sin_phi + mu * cos_phi), 7),
+            "dx": round(math.cos(start + size), 7),
+            "dy": round(math.sin(start + size), 7),
         }
 
     def arc(self, x, y, w, h, start, stop):
@@ -162,11 +162,15 @@ class Sketch:
         self.canvas.begin_path()
         for index, curve in enumerate(curves):
             if index == 0:
-                self.canvas.move_to(x + curve['ax'] * rx, y + curve['ay'] * ry)
-            self.canvas.bezier_curve_to(x + curve['bx'] * rx, y + curve['by'] * ry,
-                                        x + curve['cx'] * rx, y +
-                                        curve['cy'] * ry,
-                                        x + curve['dx'] * rx, y + curve['dy'] * ry)
+                self.canvas.move_to(x + curve["ax"] * rx, y + curve["ay"] * ry)
+            self.canvas.bezier_curve_to(
+                x + curve["bx"] * rx,
+                y + curve["by"] * ry,
+                x + curve["cx"] * rx,
+                y + curve["cy"] * ry,
+                x + curve["dx"] * rx,
+                y + curve["dy"] * ry,
+            )
         # if mode == constants['PIE'] or mode == None:
         self.canvas.line_to(x, y)
         self.canvas.close_path()
@@ -211,12 +215,11 @@ class Sketch:
         self.canvas.stroke_line(x1, y1, x2, y2)
 
     def point(self, x, y):
-        s = f'{self.canvas.stroke_style}'
-        f = f'{self.canvas.fill_style}'
+        s = f"{self.canvas.stroke_style}"
+        f = f"{self.canvas.fill_style}"
         self.canvas.fill_style = s
         self.canvas.begin_path()
-        self.canvas.arc(x, y, self.canvas.line_width *
-                        0.5, 0, self.TWO_PI, False)
+        self.canvas.arc(x, y, self.canvas.line_width * 0.5, 0, self.TWO_PI, False)
         self.canvas.fill()
         self.canvas.fill_style = f
 
@@ -264,21 +267,21 @@ class Sketch:
     def bezier_point(self, a, b, c, d, t):
         adjusted_t = 1 - t
         return (
-            pow(adjusted_t, 3) * a +
-            3 * pow(adjusted_t, 2) * t * b +
-            3 * adjusted_t * pow(t, 2) * c +
-            pow(t, 3) * d
+            pow(adjusted_t, 3) * a
+            + 3 * pow(adjusted_t, 2) * t * b
+            + 3 * adjusted_t * pow(t, 2) * c
+            + pow(t, 3) * d
         )
 
     def bezier_tangent(self, a, b, c, d, t):
         adjusted_t = 1 - t
         return (
-            3 * d * pow(t, 2) -
-            3 * c * pow(t, 2) +
-            6 * c * adjusted_t * t -
-            6 * b * adjusted_t * t +
-            3 * b * pow(adjusted_t, 2) -
-            3 * a * pow(adjusted_t, 2)
+            3 * d * pow(t, 2)
+            - 3 * c * pow(t, 2)
+            + 6 * c * adjusted_t * t
+            - 6 * b * adjusted_t * t
+            + 3 * b * pow(adjusted_t, 2)
+            - 3 * a * pow(adjusted_t, 2)
         )
 
     # ========================================
@@ -300,10 +303,10 @@ class Sketch:
     #                Structure
     # ========================================
 
-    def draw(self, *args):
+    def run_sketch(self, *args):
         canvas_layout = widgets.Layout(
-            width=f'{self.width}px',
-            height=f'{self.height}px')
+            width=f"{self.width}px", height=f"{self.height}px"
+        )
         canvas_box = widgets.Box([self.canvas], layout=canvas_layout)
         widget_box = widgets.VBox(self._widgets)
         sketch_box = widgets.HBox([canvas_box, widget_box])
@@ -329,6 +332,7 @@ class Sketch:
                     self._vertices.clear()
                 self.reset_matrix()
                 await asyncio.sleep(Sketch.DELAY)
+
         asyncio.create_task(loop())
 
     def stop(self):
@@ -461,17 +465,19 @@ class Sketch:
             self.pmouse_y = self.mouse_y
             self.mouse_x = x
             self.mouse_y = y
+
         self.canvas.on_mouse_move(get_mouse_position)
 
         def get_key(event):
-            if event['event'] == 'keydown':
-                self.key = event['key']
-                self.key_code = event['code']
+            if event["event"] == "keydown":
+                self.key = event["key"]
+                self.key_code = event["code"]
                 self._keys_pressed.add(self.key)
-            elif event['event'] == 'keyup':
-                key = event['key']
+            elif event["event"] == "keyup":
+                key = event["key"]
                 self._keys_pressed.remove(key)
-            self.key_is_pressed = len(self._keys_pressed) > 0
+            self.is_key_pressed = len(self._keys_pressed) > 0
+
         self._events.on_dom_event(get_key)
 
     # ========================================
@@ -487,22 +493,21 @@ class Sketch:
         elif len(args) == 1:
             self.canvas.draw_image(img, x=x, y=y, width=args[0])
         elif len(args) == 2:
-            self.canvas.draw_image(
-                img, x=x, y=y, width=args[0], height=args[1])
+            self.canvas.draw_image(img, x=x, y=y, width=args[0], height=args[1])
 
     # ========================================
     #                Typography
     # ========================================
 
     def text(self, text, x, y):
-        if self._fill_set:
+        if self._is_fill_set:
             self.canvas.fill_text(text, x, y)
         else:
             self.canvas.fill_style = Sketch._DEFAULT_TEXT_FILL
             self.canvas.fill_text(text, x, y)
             self.canvas.fill_style = Sketch._DEFAULT_FILL
 
-        if self._stroke_set:
+        if self._is_stroke_set:
             if self._stroke_weight_set:
                 self.canvas.stroke_text(text, x, y)
             else:
@@ -512,11 +517,15 @@ class Sketch:
 
     def text_font(self, font):
         self._font = font
-        self.canvas.font = f'{self._font_style} {self._font_weight} {self._font_size}px {self._font}'
+        self.canvas.font = (
+            f"{self._font_style} {self._font_weight} {self._font_size}px {self._font}"
+        )
 
     def text_size(self, size):
         self._font_size = size
-        self.canvas.font = f'{self._font_style} {self._font_weight} {self._font_size}px {self._font}'
+        self.canvas.font = (
+            f"{self._font_style} {self._font_weight} {self._font_size}px {self._font}"
+        )
 
     def text_style(self, style):
         if style == Sketch.NORMAL:
@@ -531,4 +540,6 @@ class Sketch:
         elif style == Sketch.BOLDITALIC:
             self._font_weight = Sketch.BOLD
             self._font_style = Sketch.ITALIC
-        self.canvas.font = f'{self._font_style} {self._font_weight} {self._font_size}px {self._font}'
+        self.canvas.font = (
+            f"{self._font_style} {self._font_weight} {self._font_size}px {self._font}"
+        )
