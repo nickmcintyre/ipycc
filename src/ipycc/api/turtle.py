@@ -18,7 +18,7 @@ class Turtle:
             self.height = args[1]
         self._bg = Sketch(self.width, self.height)
         self._bgcolor = "white"
-        self._p5 = Sketch(self.width, self.height)
+        self._pen = Sketch(self.width, self.height)
         self.reset()
         self.end_poly()
 
@@ -28,7 +28,13 @@ class Turtle:
             # TODO: implement push() and pop()
             self._bg.scale(1, -1)
             self._bg.translate(0, -self.height)
-            self._bg.image(self._p5.canvas, 0, 0)
+            self._bg.image(self._pen.canvas, 0, 0)
+            self._bg.translate(self._x, self._y)
+            self._bg.rotate(self._angle)
+            self._bg.stroke(self._pencolor)
+            self._bg.stroke_weight(2)
+            self._bg.fill(self._fillcolor)
+            self._bg.triangle(0, -4, 0, 4, 8, 0)
             self._bg.reset_matrix()
 
     def draw(self):
@@ -38,7 +44,7 @@ class Turtle:
 
     def remove(self):
         """Remove the turtle's drawing canvas."""
-        self._p5.remove()
+        self._pen.remove()
 
     # ========================================
     #              Turtle Motion
@@ -68,11 +74,11 @@ class Turtle:
         x = self._x + distance * math.cos(self._angle)
         y = self._y + distance * math.sin(self._angle)
         if self._is_drawing:
-            self._p5.line(self._x, self._y, x, y)
+            self._pen.line(self._x, self._y, x, y)
         self._x = x
         self._y = y
         if self._is_drawing_poly:
-            self._p5.vertex(x, y)
+            self._pen.vertex(x, y)
         self._render()
 
     def fd(self, distance):
@@ -178,6 +184,7 @@ class Turtle:
         337.0
         """
         self._angle -= math.radians(angle)
+        self._render()
 
     def rt(self, angle):
         """Turn turtle right by angle units.
@@ -199,6 +206,7 @@ class Turtle:
         337.0
         """
         self._angle -= math.radians(angle)
+        self._render()
 
     def left(self, angle):
         """Turn turtle left by angle units.
@@ -220,6 +228,7 @@ class Turtle:
         67.0
         """
         self._angle += math.radians(angle)
+        self._render()
 
     def lt(self, angle):
         """Turn turtle left by angle units.
@@ -241,6 +250,7 @@ class Turtle:
         67.0
         """
         self._angle += math.radians(angle)
+        self._render()
 
     def goto(self, x, y):
         """Move turtle to an absolute position.
@@ -267,9 +277,9 @@ class Turtle:
         next_x = self.width * 0.5 + x
         next_y = self.height * 0.5 + y
         if self._is_drawing:
-            self._p5.line(self._x, self._y, next_x, next_y)
+            self._pen.line(self._x, self._y, next_x, next_y)
         if self._is_drawing_poly:
-            self._p5.vertex(next_x, next_y)
+            self._pen.vertex(next_x, next_y)
         self._x = next_x
         self._y = next_y
         self._render()
@@ -340,9 +350,9 @@ class Turtle:
         """
         next_x = self.width * 0.5 + x
         if self._is_drawing:
-            self._p5.line(self._x, self._y, next_x, self._y)
+            self._pen.line(self._x, self._y, next_x, self._y)
         if self._is_drawing_poly:
-            self._p5.vertex(next_x, self._y)
+            self._pen.vertex(next_x, self._y)
         self._x = next_x
         self._render()
 
@@ -364,9 +374,9 @@ class Turtle:
         """
         next_y = 0.5 * self.height + y
         if self._is_drawing:
-            self._p5.line(self._x, self._y, self._x, next_y)
+            self._pen.line(self._x, self._y, self._x, next_y)
         if self._is_drawing_poly:
-            self._p5.vertex(self._x, next_y)
+            self._pen.vertex(self._x, next_y)
         self._y = next_y
         self._render()
 
@@ -394,6 +404,7 @@ class Turtle:
         90
         """
         self._angle = math.radians(angle)
+        self._render()
 
     def seth(self, angle):
         """Set the orientation of the turtle to to_angle.
@@ -419,6 +430,7 @@ class Turtle:
         90
         """
         self._angle = math.radians(angle)
+        self._render()
 
     def home(self):
         """Move turtle to the origin - coordinates (0,0).
@@ -635,7 +647,7 @@ class Turtle:
         if width is None:
             return self._pensize
         self._pensize = width
-        self._p5.stroke_weight(self._pensize)
+        self._pen.stroke_weight(self._pensize)
 
     def isdown(self):
         """Return True if pen is down, False if it's up.
@@ -705,7 +717,8 @@ class Turtle:
         if color is None:
             return self._pencolor
         self._pencolor = color
-        self._p5.stroke(self._pencolor)
+        self._pen.stroke(self._pencolor)
+        self._render()
 
     def fillcolor(self, color=None):
         """Return or set the fillcolor.
@@ -730,6 +743,7 @@ class Turtle:
         if color is None:
             return self._fillcolor
         self._fillcolor = color
+        self._render()
 
     def clear(self):
         """Delete the turtle's drawings from the screen. Do not move turtle.
@@ -743,7 +757,7 @@ class Turtle:
         Examples (for a Turtle instance named turtle):
         >>> turtle.clear()
         """
-        self._p5.clear()
+        self._pen.clear()
         self._render()
 
     def reset(self):
@@ -759,11 +773,11 @@ class Turtle:
         self._pencolor = "black"
         self._pensize = 1
         self._speed = 1
-        self._p5.stroke(self._pencolor)
-        self._p5.stroke_weight(self._pensize)
+        self._pen.stroke(self._pencolor)
+        self._pen.stroke_weight(self._pensize)
         self._is_filling = False
         self._fillcolor = "white"
-        self._p5.no_fill()
+        self._pen.no_fill()
         self._is_drawing_poly = False
         self._x = self.width * 0.5
         self._y = self.height * 0.5
@@ -782,7 +796,7 @@ class Turtle:
         >>> turtle.begin_poly()
         """
         if self._is_drawing:
-            self._p5.begin_shape()
+            self._pen.begin_shape()
             self._is_drawing_poly = True
 
     def end_poly(self):
@@ -796,7 +810,7 @@ class Turtle:
         Example (for a Turtle instance named turtle):
         >>> turtle.end_poly()
         """
-        self._p5.end_shape()
+        self._pen.end_shape()
         if self._is_drawing_poly:
             self._render()
         self._is_drawing_poly = False
@@ -814,7 +828,7 @@ class Turtle:
         >>> turtle.end_fill()
         """
         self._is_filling = True
-        self._p5.fill(self._fillcolor)
+        self._pen.fill(self._fillcolor)
 
     def end_fill(self):
         """Fill the shape drawn after the call begin_fill().
@@ -829,7 +843,7 @@ class Turtle:
         >>> turtle.end_fill()
         """
         self._is_filling = False
-        self._p5.no_fill()
+        self._pen.no_fill()
 
     def filling(self):
         """Return fillstate (True if filling, False else).

@@ -4,23 +4,21 @@
 This package makes it easy to explore creative coding in Python using Jupyter notebooks. Its design is heavily inspired by [p5.js](https://github.com/processing/p5.js) and [Turtle graphics](https://docs.python.org/3/library/turtle.html) from the Python standard library.
 
 ## Turtles
-A light blue square with a smaller square outlined in green at its center. The square is drawn one side at a time.
+A dark blue square with a sprial pattern drawn in white. The spiral is drawn one side at a time.
 ```python
 from ipycc import Turtle
 
 
 ted = Turtle()
 ted.draw()
-
 ted.bgcolor("midnightblue")
 ted.pencolor("ghostwhite")
-ted.pendown()
-side = 5
-while side < ted.width:
-    ted.fd(side)
-    ted.lt(90)
+for side in range(40):
+    length = side * 5
+    ted.fd(length)
     await ted.delay(0.1)
-    side += 5
+    ted.lt(123)
+    await ted.delay(0.1)
 ```
 
 ## Sketches
@@ -35,7 +33,7 @@ p5.circle(200, 200, 50)
 p5.run_sketch()
 ```
 
-A dark blue square with ten circles in its center. The circles are drawn in white and move in synchrony.
+Ten white circles moving like fireflies on a dark blue background.
 ```python
 import math
 from random import uniform
