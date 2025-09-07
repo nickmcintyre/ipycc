@@ -1,94 +1,187 @@
-# ipycc
+# [ipycc](https://ipy.cc)
 > A Python package for creative coding in Jupyter
 
-This package makes it easy to explore creative coding in Python using Jupyter notebooks. Its design is heavily inspired by [p5.js](https://github.com/processing/p5.js) and [Turtle graphics](https://docs.python.org/3/library/turtle.html) from the Python standard library.
+ipycc is a friendly tool for learning to code, making art, and exploring mathematics within [Jupyter](https://jupyter.org/) notebooks. Try it out at [https://code.ipy.cc](https://code.ipy.cc)!
 
-## Turtles
-A dark blue square with a sprial pattern drawn in white. The spiral is drawn one side at a time.
-```python
-from ipycc import Turtle
+The `Sketch` class provides a beginner-friendly API for drawing that is heavily inspired by [p5.js](https://p5js.org). `Sketch` lovingly borrows from p5.js' source code and documentation. Under the hood, it uses the powerful [ipycanvas](https://ipycanvas.readthedocs.io/en/latest/index.html) package for drawing.
 
+The package also includes a (mostly) drop-in replacement for [Turtle graphics](https://docs.python.org/3/library/turtle.html) from the Python standard library. The `Turtle` class is based on the standard library's implementation and uses the `Sketch` class for rendering. ipycc bundles the standard library's `Vec2D` class for vector arithmetic along with a few helper functions.
 
-ted = Turtle()
-ted.draw()
-ted.bgcolor("midnightblue")
-ted.pencolor("ghostwhite")
-for side in range(40):
-    length = side * 5
-    ted.fd(length)
-    await ted.delay(0.1)
-    ted.lt(123)
-    await ted.delay(0.1)
+ipycc runs smoothly in [JupyterLite](https://jupyterlite.readthedocs.io/en/stable/howto/index.html), creating a nice way to start coding without installing any software. [https://code.ipy.cc](https://code.ipy.cc) uses this setup.
+
+## Installation
+
+If you'd like to install ipycc locally, start by [downloading Python](https://www.python.org/downloads/). You can then create a virtual environment and install ipycc from your system shell like so:
+
+On Unix/macOS:
+```sh
+mkdir ipycc
+cd ipycc
+python3 -m venv venv
+source venv/bin/activate
+pip install jupyterlab ipycc
 ```
 
-## Sketches
-A light blue square with a circle in its center. The circle is drawn with a white center and black edge.
-```python
-from ipycc import Sketch
-
-
-p5 = Sketch(400, 400)
-p5.background("dodgerblue")
-p5.circle(200, 200, 50)
-p5.run_sketch()
+On Windows:
+```powershell
+mkdir ipycc
+cd ipycc
+py -m venv venv
+venv\Scripts\activate
+pip install jupyterlab ipycc
 ```
 
-Ten white circles moving like fireflies on a dark blue background.
+The [Python Packaging User Guide](https://packaging.python.org/en/latest/tutorials/installing-packages/) has additional information to help you get up and running.
+
+### 💡 Local alternatives
+
+If you're running ipycc locally, you may also be interested in [py5](https://py5coding.org/) which uses [Processing](https://processing) for drawing. py5 has advanced features you may wish to explore at some point. ipycc mimics py5 where possible so that switching between the two is easy.
+
+The standard library's version of Turtle graphics doesn't run in the web browser, but you can run it locally from Jupyter using the following [magic command](https://ipython.readthedocs.io/en/stable/interactive/magics.html#magic-gui):
+
 ```python
-import math
-from random import uniform
-from ipycc import Sketch
+from turtle import Turtle
 
+%gui tk
 
-p5 = Sketch(400, 400)
-coupling = 1
-num_bugs = 10
-k_n = coupling / num_bugs
-
-class Bug:
-    def __init__(self):
-        self.x = p5.width * 0.5
-        self.y = p5.height * 0.5
-        self.r = 5
-        self.angle = uniform(0, math.tau)
-        self.freq = uniform(5, 10)
-        self.da_dt = 0
-        self.dt = 0.01
-    
-    def render(self):
-        p5.fill("ghostwhite")
-        p5.no_stroke()
-        p5.circle(self.x, self.y, 2 * self.r)
-    
-    def update(self):
-        self.angle += self.da_dt * self.dt
-        dx = math.cos(self.angle)
-        dy = math.sin(self.angle)
-        self.x += dx
-        self.y += dy
-    
-    def sync(self, bugs):
-        self.da_dt = self.freq
-        for bug in bugs:
-            self.da_dt += k_n * math.sin(bug.angle - self.angle)
-
-bugs = [Bug() for _ in range(num_bugs)]
-
-def draw():
-    p5.background("#1919706F")
-    for bug in bugs:
-        bug.sync(bugs)
-    
-    for bug in bugs:
-        bug.update()
-        bug.render()
-
-# Loop for 10 seconds.
-p5.run_sketch(draw, 10) 
+t = Turtle()
+t.forward(50) # opens in a separate window
 ```
 
-ipycc provides a simplified interface to the HTML canvas by wrapping [ipycanvas](https://ipycanvas.readthedocs.io/en/latest/index.html) in a beginner-friendly API.
+## A tour of ipycc
 
-## Acknowledgements
-- Portions of the `Sketch` class are lovingly borrowed from their [p5.js](https://p5js.org) and [proceso](https://proceso.cc) counterparts.
-- Portions of the `Turtle` class are lovingly borrowed from their standard library counterparts.
+Here are a few quick examples of ipycc in action. 
+
+### Sketches
+
+A light gray square with a circle in its center. The circle is drawn with a white center and a black edge.
+```python
+from ipycc.sketch import Sketch
+
+# Create the sketch and show it.
+s = Sketch()
+s.show()
+
+# Paint the background.
+s.background(200)
+
+# Draw a circle.
+s.circle(50, 50, 20)
+```
+
+A purple square with a circle in its center. The circle is drawn with a pink center and a thick white edge.
+```python
+from ipycc.sketch import Sketch
+
+# Create the sketch and show it.
+s = Sketch(400, 400)
+s.show()
+
+# Paint the background.
+s.background("darkorchid")
+
+# Style the circle.
+s.stroke_weight(5)
+s.stroke("ghostwhite")
+s.fill("fuchsia")
+
+# Draw the circle.
+s.circle(200, 200, 100)
+```
+
+A purple square with a circle in its center. The circle is drawn with a pink center and a thick white edge. It moves slowly to the right and bounces off the wall.
+```python
+from time import sleep
+from ipycanvas import hold_canvas
+from ipycc.sketch import Sketch
+
+# Create the sketch and show it.
+s = Sketch(400, 400)
+s.show()
+
+# Initialize variables for position and speed.
+x = 200
+x_speed = 3
+
+# Animate 100 frames.
+for i in range(100):
+    # Send all drawing instructions for the frame at once.
+    with hold_canvas():
+        # Paint the background.
+        s.background("darkorchid")
+    
+        # Update position.
+        x += x_speed
+    
+        # Check for a collision and bounce.
+        if x > s.width:
+            x_speed = -3
+    
+        # Style the circle.
+        s.stroke_weight(5)
+        s.stroke(248, 248, 255)
+        s.fill("#FF00FF")
+
+        # Draw the circle.
+        s.circle(x, 200, 100)
+
+    # Pause before drawing the next frame.
+    sleep(0.05)
+```
+
+### Turtles
+
+A white square with a short black line extending from the center to the right. A black arrow tip at the end of the line points up.
+```python
+from ipycc.turtle import Turtle
+
+# Create the turtle and show it.
+t = Turtle()
+t.show()
+
+# Draw a line.
+t.forward(50)
+# Turn left.
+t.left(90)
+```
+
+A white square with the outline of a smaller black square. The smaller square is drawn one side at a time.
+```python
+from ipycc.turtle import Turtle
+
+# Create the turtle and show it.
+t = Turtle()
+t.show()
+
+# Draw a square.
+for i in range(4):
+    t.forward(50)
+    t.left(90)
+```
+
+A black square with a sprial pattern drawn in green. The spiral is drawn one side at a time.
+```python
+from ipycc.turtle import Turtle
+
+# Create the turtle and show it.
+t = Turtle()
+t.show()
+
+# Style the turtle.
+t.bgcolor("black")
+t.color(0, 1, 0)
+
+# Draw a spiral.
+for i in range(40):
+    length = i * 5
+    t.forward(length)
+    t.left(90)
+```
+
+## License
+
+ipycc is licensed under the [GNU Lesser General Public License v3.0](https://choosealicense.com/licenses/lgpl-3.0/).
+
+## Contributing
+
+Found a bug or typo? Want a new feature? Feel free to open an issue in the project's [GitHub repository](https://github.com/nickmcintyre/ipycc)!

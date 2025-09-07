@@ -1,2 +1,4 @@
-from .api.sketch import Sketch
-from .api.turtle import Turtle
+"""
+.. include:: ../../README.md
+   :start-line: 1
+"""

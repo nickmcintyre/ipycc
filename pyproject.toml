@@ -1,6 +1,44 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ipycc"
+version = "0.0.14"
+authors = [
+  { name="Nick McIntyre", email="nick@mcintyre.io" },
 ]
-build-backend = "setuptools.build_meta"
+description = "A Python package for creative coding in Jupyter"
+readme = "README.md"
+requires-python = ">=3.13"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: Artistic Software",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+license = "LGPL-3.0-or-later"
+license-files = ["LICENSE"]
+keywords = [
+    "Art",
+    "Math",
+    "Visualization",
+    "Jupyter",
+    "p5.js",
+    "Turtle",
+    "Sketch",
+]
+dependencies = [
+    "ipycanvas >= 0.14.1",
+]
+
+[project.urls]
+Homepage = "https://ipy.cc"
+Issues = "https://github.com/nickmcintyre/ipycc/issues"
