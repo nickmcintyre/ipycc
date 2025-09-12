@@ -1,8 +1,13 @@
 import math
-from typing import Self
-from ipycanvas import Canvas
+import time
+from typing import Callable, Self
+from ipycanvas import Canvas, hold_canvas
 from IPython.display import display
 import numpy as np
+
+class SketchError(Exception):
+    """Some Sketch Error.
+    """
 
 
 class Sketch:
@@ -59,13 +64,16 @@ class Sketch:
         self._init_transformation()
         # Create an empty list for shape vertices.
         self._vertices = []
+        # Set the current frame count (for animation).
+        self.frame_count = 0
+        self._is_looping = False
 
     def _init_transformation(self):
         sx = self.pixel_density
         sy = self.pixel_density
         self._matrix = np.array([[sx,  0,  0],
                                  [ 0, sy,  0],
-                                 [ 0,  0,  1]])
+                                 [ 0,  0,  1]], dtype=float)
         self.canvas.scale(self.pixel_density, y=self.pixel_density)
 
     def _init_style(self):
@@ -762,7 +770,8 @@ class Sketch:
         s.square(30, 20, 55)
         ```
         """
-        self.canvas.rect(x, y, s, s)
+        self.canvas.fill_rect(x, y, s, s)
+        self.canvas.stroke_rect(x, y, s, s)
 
     def triangle(
         self,
@@ -1142,6 +1151,7 @@ class Sketch:
         if len(self._vertices) > 0:
             self.canvas.fill_polygon(self._vertices)
             self.canvas.stroke_polygon(self._vertices)
+            self._vertices.clear()
 
     def vertex(self, x: int | float, y: int | float):
         """Adds a vertex to a custom shape.
@@ -1228,7 +1238,7 @@ class Sketch:
         s.circle(0, 0, 40)
         ```
         """
-        m = np.array(((a, c, e), (b, d, f), (0, 0, 1)))
+        m = np.array(((a, c, e), (b, d, f), (0, 0, 1)), dtype=float)
         self._matrix = m @ self._matrix
         self.canvas.transform(a, b, c, d, e, f)
 
@@ -1289,7 +1299,7 @@ class Sketch:
         ```
         """
         ca, sa = math.cos(angle), math.sin(angle)
-        m = np.array(((ca, -sa, 0), (sa, ca, 0), (0, 0, 1)))
+        m = np.array(((ca, -sa, 0), (sa, ca, 0), (0, 0, 1)), dtype=float)
         self._matrix = m @ self._matrix
         self.canvas.rotate(angle)
 
@@ -1342,11 +1352,11 @@ class Sketch:
         ```
         """
         if y is None:
-            m = np.array(((x, 0, 0), (0, x, 0), (0, 0, 1)))
+            m = np.array(((x, 0, 0), (0, x, 0), (0, 0, 1)), dtype=float)
             self._matrix = m @ self._matrix
             self.canvas.scale(x)
         else:
-            m = np.array(((x, 0, 0), (0, y, 0), (0, 0, 1)))
+            m = np.array(((x, 0, 0), (0, y, 0), (0, 0, 1)), dtype=float)
             self._matrix = m @ self._matrix
             self.canvas.scale(x, y=y)
 
@@ -1424,7 +1434,7 @@ class Sketch:
         s.circle(0, 0, 40)
         ```
         """
-        m = np.array(((0, 0, x), (0, 0, y), (0, 0, 1)))
+        m = np.array(((0, 0, x), (0, 0, y), (0, 0, 1)), dtype=float)
         self._matrix = m @ self._matrix
         self.canvas.translate(x, y)
 
@@ -1719,6 +1729,74 @@ class Sketch:
         self.canvas.font = (
             f"{self._font_style} {self._font_weight} {self._font_size}px {self._font}"
         )
+
+    # ========================================
+    #                Utilities
+    # ========================================
+
+    def _unpack_transform(self) -> tuple[float]:
+        """Unpacks the sketch's transformation matrix."""
+        a = self._matrix[0][0]
+        b = self._matrix[1][0]
+        c = self._matrix[0][1]
+        d = self._matrix[1][1]
+        e = self._matrix[2][0]
+        f = self._matrix[2][2]
+        return a, b, c, d, e, f
+
+    def run_sketch(self, draw: Callable, seconds: int | float, delay: float = 20):
+        """Draws frames in an animation by calling a function repeatedly.
+
+        `run_sketch()` repeatedly calls a function that contains drawing
+        commands. The rate at which each frame is drawn depends on many
+        factors. `run_sketch()` doesn't attempt to maintain a constant
+        framerate.
+
+        The first parameter, `draw`, is a function containing the commands for
+        drawing each frame.
+
+        The second parameter, `seconds`, sets the number of seconds the
+        animation should run.
+
+        The third parameter, `delay`, is optional. It sets the number of
+        milliseconds the sketch should pause after drawing the current frame.
+        The default value is 20. If `draw` contains many drawing commands,
+        each frame may take much longer than `delay` milliseconds to render.
+
+        **Example**
+        ```python
+        from ipycc.sketch import Sketch
+
+        s = Sketch()
+        s.show()
+
+        def draw():
+            # Paint the background.
+            s.background(200)
+
+            # Calculate the circle's x-coordinate.
+            x = s.frame_count
+
+            # Draw the circle.
+            s.circle(x, 50, 20)
+
+        # Run the animation for 5 seconds.
+        s.run_sketch(draw, 5)
+        ```
+        """
+        if delay < 0:
+            raise SketchError("Your delay value must be positive.")
+        start = time.time()
+        end = start + seconds
+        delay *= 0.001
+        while time.time() < end:
+            with hold_canvas():
+                a, b, c, d, e, f = self._unpack_transform()
+                draw()
+                self.reset_matrix()
+                self.apply_matrix(a, b, c, d, e, f)
+                self.frame_count += 1
+                time.sleep(delay)
 
 
 __all__ = ["Sketch"]
