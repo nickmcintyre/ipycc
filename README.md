@@ -82,11 +82,13 @@ s.run_sketch(draw, 5)
 
 A white square with a short black line extending from the center to the right. A black arrow tip at the end of the line points up.
 ```python
-from ipycc.turtle import Turtle
+from ipycc.turtle import Turtle, showscreen
 
-# Create a turtle and show it.
+# Show the screen.
+showscreen()
+
+# Create a turtle.
 t = Turtle()
-t.show()
 
 # Draw a line.
 t.forward(50)
@@ -96,11 +98,13 @@ t.left(90)
 
 A white square with the outline of a smaller black square. The smaller square is drawn one side at a time.
 ```python
-from ipycc.turtle import Turtle
+from ipycc.turtle import Turtle, showscreen
 
-# Create a turtle and show it.
+# Show the screen.
+showscreen()
+
+# Create a turtle.
 t = Turtle()
-t.show()
 
 # Draw a square.
 for i in range(4):
@@ -110,11 +114,13 @@ for i in range(4):
 
 A black square with a sprial pattern drawn in green. The spiral is drawn one side at a time.
 ```python
-from ipycc.turtle import Turtle
+from ipycc.turtle import Turtle, showscreen
 
-# Create a turtle and show it.
+# Show the screen.
+showscreen()
+
+# Create a turtle.
 t = Turtle()
-t.show()
 
 # Style the turtle.
 t.bgcolor("black")

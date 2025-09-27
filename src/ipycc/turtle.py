@@ -114,6 +114,7 @@ class _Screen:
         self.width = width
         self.height = height
         self._sketch = Sketch(self.width, self.height)
+        self._sketch_manager = self._sketch.canvas._canvas_manager
         self._bgcolor = "white"
         self._sketch.background(self._bgcolor)
         self._turtles = []
@@ -136,6 +137,12 @@ class _Screen:
                     self._sketch.scale(1, -1)
                     self._sketch.translate(0, -self.height)
                     self._sketch.image(t._pen, 0, 0)
+                    self._sketch.reset_matrix()
+                    self._sketch.canvas.restore()
+                for t in self._turtles:
+                    self._sketch.canvas.save()
+                    self._sketch.scale(1, -1)
+                    self._sketch.translate(0, -self.height)
                     if t.isvisible():
                         x, y = t._to_screen_coords(t._position)
                         self._sketch.translate(x, y)
@@ -146,8 +153,8 @@ class _Screen:
                         self._sketch.fill(t._fillcolor)
                         self._sketch.begin_shape()
                         shape = _turtle_shapes[t._shape]
+                        sx, sy = t._stretchfactor
                         for v in shape:
-                            sx, sy = t._stretchfactor
                             self._sketch.vertex(sx * v[0], sy * v[1])
                         self._sketch.end_shape()
                     self._sketch.reset_matrix()
@@ -156,6 +163,21 @@ class _Screen:
     def _delay(self, ms: int | float):
         """Delays animation for a given number of milliseconds."""
         time.sleep(ms * 0.001)
+    
+    def replace(self):
+        """Copy the screen and reassign its turtles."""
+        screen = _Screen(self.width, self.height)
+        screen._sketch = Sketch(self.width, self.height)
+        screen._bgcolor = self._bgcolor
+        screen._sketch.background(self._bgcolor)
+        screen._turtles = self._turtles
+        for t in screen._turtles:
+            t._screen = screen
+        screen._delayvalue = self._delayvalue
+        screen._tracing = self._tracing
+        screen.xscale = self.xscale
+        screen.yscale = self.yscale
+        return screen
 
     def show(self):
         """Display the screen's drawing canvas."""
@@ -163,93 +185,61 @@ class _Screen:
         self._sketch.show()
 
 
-# Screens dictionary.
-_screens = {
-    "default": _Screen()
-}
-_screens["current"] = _screens["default"]
+# Screen singleton.
+_SCREEN = _Screen()
 
 
-def setup(width: int | float, height: int | float, name: str = "default"):
+def setup(width: int | float, height: int | float):
     """Sets the size of the screen.
 
     Arguments:
     - `width` -- a number
     - `height` -- a number
-    - `name` -- a string (optional)
 
     The first two arguments, `width` and `height`, set the width of the
     drawing screen in pixels.
 
-    The third argument, `name`, is optional. If `name` is provided, a new
-    screen will be created if it doesn't already exist. If a screen with
-    `name` does exist, it will be resized and all turtles will be reset.
-    The screen will be set as the current drawing screen.
+    Calling `setup()` will resize the screen and all turtles will be reset.
 
     **Example**
     ```python
-    from ipycc.turtle import Turtle, setup
+    from ipycc.turtle import Turtle, showscreen, setup
 
-    # Set the default screen to half size.
+    # Show the screen.
+    showscreen()
+
+    # Set the screen to half size.
     setup(200, 200)
 
-    # Create a turtle and show it.
+    # Create a turtle.
     t = Turtle()
-    t.show()
-
-    # Send the turtle home.
-    t.home()
-
-    # Set the new screen to quarter size.
-    setup(100, 100, "quarter")
-
-    # Create a turtle and show it.
-    t = Turtle()
-    t.show()
-
-    # Send the turtle home.
-    t.home()
     ```
     """
-    if name in _screens:
-        old_screen = _screens[name]
-        _screens[name] = _Screen(width, height)
-        _screens[name]._turtles = old_screen._turtles
-        for t in _screens[name]._turtles:
-            t._pen = _Screen(width, height)
-            t.reset()
-    else:
-        _screens[name] = _Screen(width, height)
-    _screens["current"] = _screens[name]
+    global _SCREEN
+    new_screen = _Screen(width, height)
+    new_screen._turtles = _SCREEN._turtles
+    for t in new_screen._turtles:
+        t._pen = Sketch(width, height)
+        t.reset()
+    _SCREEN = new_screen
 
 
-def showscreen(name: str = "default"):
+def showscreen():
     """Shows the screen to which turtles are drawing.
 
-    Argument: `name` (optional)
-
-    Calling `showscreen()` with no arguments displays the current drawing
-    screen beneath the code cell in which it's called.
-
-    The argument, `name`, is optional. If the name of a screen created with
-    `setup()` is passed, then it will be set as the current screen and
-    displayed. Any turtles created afterward will render their
-    drawings to this screen.
+    Calling `showscreen()` displays the drawing screen beneath the
+    code cell in which it's called.
 
     **Example**
     ```python
-    from ipycc.turtle import Turtle, setup, showscreen
+    from ipycc.turtle import Turtle, showscreen
 
-    # Show the default screen.
+    # Show the screen.
     showscreen()
 
     # Create a turtle and move it.
     t = Turtle()
     t.forward(100)
-    
-    # Create a new sceen and show it.
-    setup(200, 200, "a")
-    showscreen("a")
 
     # Create a turtle and move it.
     t2 = Turtle()
@@ -258,10 +248,12 @@ def showscreen(name: str = "default"):
         t2.left(90)
     ```
     """
-    if not name in _screens:
-        raise TurtleGraphicsError(f"The screen {name} doesn't exist.")
-    _screens["current"] = _screens[name]
-    _screens["current"].show()
+    global _SCREEN
+    # Copy the screen and reassign its turtles.
+    new_screen = _SCREEN.replace()
+    _SCREEN = new_screen
+    # Show the screen.
+    _SCREEN.show()
 
 
 def tracer(n: int):
@@ -271,11 +263,15 @@ def tracer(n: int):
     
     **Example**
     ```python
-    from ipycc.turtle import Turtle, tracer
+    from ipycc.turtle import Turtle, showscreen, tracer
 
+    # Show the screen.
+    showscreen()
+
+    # Create a turtle.
     t = Turtle()
-    t.show()
 
+    # Draw without animation.
     tracer(0)
     for i in range(100):
         length = i * 5
@@ -284,73 +280,66 @@ def tracer(n: int):
     tracer(1)
     ```
     """
-    _screens["current"]._tracing = n
-    if n == 1:
-        _screens["current"]._update()
+    _SCREEN._tracing = n
+    if n == 0:
+        _SCREEN._sketch_manager._caching = True
+    elif n == 1:
+        _SCREEN._update()
+        _SCREEN._sketch_manager._caching = False
+        _SCREEN._sketch_manager.flush()
 
 
-def clearscreen(name: str = "current"):
+def clearscreen():
     """Delete all drawings from the screen.
     
-    Reset the now empty screen to its initial state with a white background.
-
-    Argument: `name` (optional)
-
-    Calling `clearscreen()` resets all turtles on the current screen.
-
-    The argument, `name`, is optional. If the name of a screen created with
-    `setup()` is passed, then its turtles will be reset.
+    Resets the now empty screen to its initial state with a white background.
+    Calling `clearscreen()` resets all turtles on the screen.
 
     **Example**
     ```python
-    from ipycc.turtle import Turtle, clearscreen
+    from ipycc.turtle import Turtle, showscreen. clearscreen
 
-    # Create a turtle and show its screen.
+    # Show the screen.
+    showscreen()
+
+    # Create a turtle.
     t = Turtle()
-    t.show()
 
     # Move the turtle forward.
     t.forward(100)
     
-    # Clear the current screen.
+    # Clear the screen.
     clearscreen()
     ```
     """
-    if name not in _screens:
-        raise TurtleGraphicsError(f"The screen {name} doesn't exist.")
-    for t in _screens[name]._turtles:
+    for t in _SCREEN._turtles:
         t.clear()
-    _screens[name]._sketch.background("white")
+    _SCREEN._sketch.background("white")
 
 
-def resetscreen(name: str = "current"):
+def resetscreen():
     """Reset all turtles on the screen to their initial state.
 
-    Argument: `name` (optional)
-
-    Calling `resetscreen()` resets all turtles on the current screen.
-
-    The argument, `name`, is optional. If the name of a screen created with
-    `setup()` is passed, then it will be reset.
+    Calling `resetscreen()` resets all turtles on the screen.
 
     **Example**
     ```python
-    from ipycc.turtle import Turtle, resetscreen
+    from ipycc.turtle import Turtle, showscreen, resetscreen
 
-    # Create a turtle and show its screen.
+    # Show the screen.
+    showscreen()
+
+    # Create a turtle.
     t = Turtle()
-    t.show()
 
     # Move the turtle forward.
     t.forward(100)
     
-    # Reset the current screen.
+    # Reset the screen.
     resetscreen()
     ```
     """
-    if name not in _screens:
-        raise TurtleGraphicsError(f"The screen {name} doesn't exist.")
-    for t in _screens[name]._turtles:
+    for t in _SCREEN._turtles:
         t.reset()
 
 
@@ -358,10 +347,10 @@ class Turtle:
     """A class to describe a virtual turtle robot drawing on a screen."""
 
     def __init__(self):
-        self._screen = _screens["current"]
+        self._screen = _SCREEN
         self._pen = Sketch(self._screen.width, self._screen.height)
-        self.reset()
         self._screen.add_turtle(self)
+        self.reset()
 
     def _to_screen_coords(self, v: Vec2D) -> Vec2D:
         x = self._screen.width * 0.5 + v[0]
@@ -373,10 +362,13 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
         ```
         """
         self._screen.show()
@@ -440,10 +432,13 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
         print(t.position()) # (0.00, 0.00)
         t.forward(25)
@@ -469,11 +464,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Print the turtle's position before and after moving.
         print(t.position()) # (0.00, 0.00)
         t.backward(30)
         print(t.position()) # (-30.00, 0.00)
@@ -503,11 +502,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Print the turtle's heading before and after turning.
         print(t.heading()) # 22.0
         t.right(45)
         print(t.heading()) # 337.0
@@ -531,11 +534,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Print the turtle's heading before and after turning.
         print(t.heading()) # 22.0
         t.left(45)
         print(t.heading()) # 67.0
@@ -561,14 +568,17 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
-        tp = t.pos()
-        print(tp) # (0.00, 0.00)
-        t.setpos(60,30)
+        # Print the turtle's position before and after moving.
+        print(t.pos()) # (0.00, 0.00)
+        t.goto(60, 30)
         print(t.pos()) # (60.00, 30.00)
         ```
         """
@@ -591,11 +601,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Print the turtle's position before and after moving.
         print(t.position()) # (0.00, 240.00)
         t.setx(10)
         print(t.position()) # (10.00, 240.00)
@@ -614,11 +628,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Print the turtle's position before and after moving.
         print(t.position()) # (0.00, 40.00)
         t.sety(-10)
         print(t.position()) # (0.00, -10.00)
@@ -643,11 +661,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Set the turtle's heading and print it.
         t.setheading(90)
         print(t.heading()) # 90
         ```
@@ -669,11 +691,16 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Move the turtle forward, then move it back home.
+        t.forward(100)
         t.home()
         ```
         """
@@ -693,15 +720,19 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Draw dots.
         t.dot()
-        t.fd(50)
+        t.forward(50)
         t.dot(20, "blue")
-        t.fd(50)
+        t.forward(50)
         ```
         """
         if not color:
@@ -722,6 +753,7 @@ class Turtle:
         x, y = self._to_screen_coords(self._position)
         self._pen.circle(x, y, size)
         self._pen.canvas.restore()
+        self._update()
 
     def stamp(self):
         """Stamp a copy of the turtleshape onto the canvas.
@@ -733,14 +765,18 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Draw a stamp and move.
         t.color("blue")
         t.stamp()
-        t.fd(50)
+        t.forward(50)
         ```
         """
         self._pen.canvas.save()
@@ -749,7 +785,7 @@ class Turtle:
         angle = math.radians(self.heading()) - math.pi / 2
         self._pen.rotate(angle)
         self._pen.stroke(self._pencolor)
-        self._pen.stroke_weight(2)
+        self._pen.stroke_weight(self._outlinewidth)
         self._pen.fill(self._fillcolor)
         self._pen.begin_shape()
         shape = _turtle_shapes[self._shape]
@@ -759,6 +795,7 @@ class Turtle:
         self._pen.end_shape()
         self._pen.reset_matrix()
         self._pen.canvas.restore()
+        self._update()
 
     def speed(self, speed: int | float | str = None) -> None | int:
         """Return or set the turtle's speed.
@@ -787,11 +824,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Set the turtle's speed.
         t.speed(3)
         ```
         """
@@ -815,11 +856,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Print the turtle's position.
         print(t.pos()) # (0.00, 0.00)
         ```
         """
@@ -839,11 +884,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle, Vec2D
+        from ipycc.turtle import Turtle, showscreen, Vec2D
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Print the turtle's position and heading.
         print(t.pos()) # (10.00, 10.00)
         print(t.towards(0, 0)) # 225.0
         print(t.towards((0, 0))) # 225.0
@@ -869,11 +918,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Move the turtle and print its x-coordinate.
         t.left(60)
         t.forward(100)
         print(tutrtle.xcor()) # 50.0
@@ -888,11 +941,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Move the turtle and print its y-coordinate.
         t.left(60)
         t.forward(100)
         print(t.ycor()) # 86.6025403784
@@ -907,11 +964,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Turn the turtle and print its heading.
         t.left(67)
         print(t.heading()) # 67.0
         ```
@@ -930,14 +991,23 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Print the turtle's position and distance to a point.
         print(t.pos()) # (0.00, 0.00)
-        print(t.distance(30,40)) # 50.0
+        print(t.distance(30, 40)) # 50.0
+
+        # Create another turtle.
         t2 = Turtle()
+
+        # Move the second turtle and print its distance from
+        # the first turtle.
         t2.forward(77)
         print(t.distance(t2)) # 77.0
         ```
@@ -968,11 +1038,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Turn the turtle and print its heading.
         t.left(90)
         print(t.heading()) # 90
 
@@ -991,11 +1065,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Print the turtle's heading in degrees and radians.
         print(t.heading()) # 90
         t.radians()
         print(t.heading()) # 1.5707963267948966
@@ -1016,11 +1094,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Put the turtle's pen down and move.
         t.pendown()
         t.forward(100)
         ```
@@ -1039,11 +1121,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Pick the turtle's pen up and move.
         t.penup()
         t.forward(100)
         ```
@@ -1066,13 +1152,21 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Print the turtle's pen size and move.
         print(t.pensize()) # 1
+        t.forward(50)
+
+        # Change the turtle's pen size and move.
         t.pensize(10)   # from here on lines of width 10 are drawn
+        t.forward(50)
         ```
         """
         if width is None:
@@ -1089,13 +1183,18 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Pick the turtle's pen up and print its state.
         t.penup()
         print(t.isdown()) # False
+        # Put the turtle's pen down and print its state.
         t.pendown()
         print(t.isdown()) # True
         ```
@@ -1155,14 +1254,19 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Print the turtle's default color mode.
         print(t.colormode()) # 1.0
+        # Change the turtle's color mode and change its color.
         t.colormode(255)
-        t.pencolor(240, 160, 80)
+        t.color(240, 160, 80)
         ```
         """
         if cmode is None:
@@ -1194,14 +1298,20 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Set the turtle's pen and fill color, then print them.
         t.color('red', 'green')
         print(t.color()) # ('red', 'green')
+        # Change the color mode.
         t.colormode(255)
+        # Set the turtle's pen and fill color, then print them.
         t.color((40, 80, 120), (160, 200, 240))
         print(t.color()) # ('#285078', '#a0c8f0')
         ```
@@ -1250,15 +1360,21 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Set the turtle's pen color to brown, then print it.
         t.pencolor('brown')
+        print(t.pencolor()) # 'brown'
+        # Set the turtle's pen color using a tuple, then print it.
         tup = (0.2, 0.8, 0.55)
         t.pencolor(tup)
-        print (t.pencolor()) # '#33cc8c'
+        print(t.pencolor()) # '#33cc8c'
         ```
         """
         if args:
@@ -1297,15 +1413,21 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Set the turtle's fill color to violet.
         t.fillcolor('violet')
+        # Set the turtle's fill color to its pen color.
         col = t.pencolor()
         t.fillcolor(col)
-        t.fillcolor(0, .5, 0)
+        # Set the turtle's fill color using RGB values.
+        t.fillcolor(0, 0.5, 0)
         ```
         """
         if args:
@@ -1325,12 +1447,17 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Begin filling.
         t.begin_fill()
+        # Change the turtle's pen size if it is filling.
         if t.filling():
             t.pensize(5)
         else:
@@ -1346,19 +1473,28 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Set the turtle's pen and fill colors.
         t.color("black", "red")
+
+        # Begin filling.
         t.begin_fill()
+        # Begin creating a polygon.
         t.begin_poly()
         for i in range(4):
             t.forward(50)
             t.left(90)
         t.end_poly()
+        # Stop creating a polygon.
         t.end_fill()
+        # Stop filling.
         ```
         """
         self._fillpath = [self._position]
@@ -1370,19 +1506,27 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Set the turtle's pen and fill color.
         t.color("black", "red")
+        # Begin filling.
         t.begin_fill()
+        # Begin creating a polygon.
         t.begin_poly()
         for i in range(4):
             t.forward(50)
             t.left(90)
         t.end_poly()
+        # Stop creating a polygon.
         t.end_fill()
+        # Stop filling.
         ```
         """
         if self.filling():
@@ -1405,18 +1549,26 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Set the turtle's pen and fill color.
         t.color("black", "red")
+        # Begin filling.
         t.begin_fill()
+        # Begin creating a polygon.
         t.begin_poly()
         for i in range(4):
             t.forward(50)
             t.left(90)
+        # Stop creating a polygon.
         t.end_poly()
+        # Stop filling.
         t.end_fill()
         ```
         """
@@ -1433,18 +1585,26 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Set the turtle's pen and fill color.
         t.color("black", "red")
+        # Begin filling.
         t.begin_fill()
+        # Begin creating a polygon.
         t.begin_poly()
         for i in range(4):
             t.forward(50)
             t.left(90)
+        # Stop creating a polygon.
         t.end_poly()
+        # Stop filling.
         t.end_fill()
         ```
         """
@@ -1458,10 +1618,18 @@ class Turtle:
 
         **Example**
         ```python
-        t = Turtle()
-        t.show()
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
+        t = Turtle()
+
+        # Move the turtle forward.
         t.forward(50)
+
+        # Reset the turtle.
         t.reset()
         ```
         """
@@ -1489,6 +1657,7 @@ class Turtle:
         self._angleOrient = 1.0
         self.degrees()
         self.clear()
+        self.home()
 
     def clear(self):
         """Delete the turtle's drawings from the screen. Do not move turtle.
@@ -1501,12 +1670,18 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Move the turtle forward.
         t.forward(50)
+
+        # Clear the turtle's drawings.
         t.clear()
         ```
         """
@@ -1545,11 +1720,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Write messages to the screen.
         t.write('Home = ', align="center")
         t.write((0, 0))
         ```
@@ -1574,11 +1753,18 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Hide the turtle.
+        t.hideturtle()
+
+        # Show the turtle.
         t.showturtle()
         ```
         """
@@ -1594,12 +1780,19 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Hide the turtle.
         t.hideturtle()
+
+        # Show the turtle.
+        t.showturtle()
         ```
         """
         self._shown = False
@@ -1612,13 +1805,18 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Hide the turtle and print whether it is visible.
         t.hideturtle()
         print(t.isvisible()) # False
+        # Show the turtle and print whether it is visible.
         t.showturtle()
         print(t.isvisible()) # True
         ```
@@ -1642,12 +1840,18 @@ class Turtle:
         - `"classic"`
 
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Print the turtle's default shape.
         print(t.shape()) # 'arrow'
+
+        # Change the turtle's shape and print it.
         t.shape("turtle")
         print(t.shape()) # 'turtle'
         ```
@@ -1676,11 +1880,15 @@ class Turtle:
         - `outline` determines the width of the shapes's outline.
 
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Change the turtle's shape size.
         t.shapesize(5, 5, 12)
         t.shapesize(outline=8)
         ```
@@ -1713,13 +1921,19 @@ class Turtle:
         heading of the turtle are sheared.
 
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Set the turtle's shape and size.
         t.shape("circle")
-        t.shapesize(5,2)
+        t.shapesize(5, 2)
+
+        # Set the turtle's shear factor and print it.
         t.shearfactor(0.5)
         print(t.shearfactor()) # 0.5
         ```
@@ -1742,22 +1956,38 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Set the turtle's shape and size.
         t.shape("circle")
         t.shapesize(5, 2)
+
+        # Print the turtle's tilt angle.
         print(t.tiltangle()) # 0.0
+
+        # Tilt the turtle and print the angle.
         t.tiltangle(45)
         print(t.tiltangle()) # 45.0
+
+        # Stamp the turtle's shape.
         t.stamp()
-        t.fd(50)
+        
+        # Move the turtle forward.
+        t.forward(50)
+    
+        #  Tilt the turtle back to its original angle and print it.
         t.tiltangle(-45)
         print(t.tiltangle()) # 315.0
+    
+        # Stamp the turtle's shape and move forward.
         t.stamp()
-        t.fd(50)
+        t.forward(50)
         ```
         """
         if angle is None:
@@ -1779,17 +2009,25 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Set the turtle's shape and size.
         t.shape("circle")
-        t.shapesize(5,2)
+        t.shapesize(5, 2)
+    
+        # Tilt the turtle and move forward.
         t.tilt(30)
-        t.fd(50)
+        t.forward(50)
+
+        # Tilt the turtle again and move forward.
         t.tilt(30)
-        t.fd(50)
+        t.forward(50)
         ```
         """
         self.tiltangle(angle + self.tiltangle())
@@ -1820,11 +2058,15 @@ class Turtle:
 
         **Example**
         ```python
-        from ipycc.turtle import Turtle
+        from ipycc.turtle import Turtle, showscreen
 
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
         t = Turtle()
-        t.show()
 
+        # Set the screen's background color and print it.
         t.bgcolor("orange")
         print(t.bgcolor()) # 'orange'
         ```

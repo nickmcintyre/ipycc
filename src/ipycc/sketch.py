@@ -14,22 +14,54 @@ class Sketch:
     """A class to describe a 2D drawing canvas."""
 
     # Constants
-    HALF_PI = math.pi / 2.0
-    PI = math.pi
-    QUARTER_PI = math.pi / 4.0
-    TAU = math.tau
-    TWO_PI = math.tau
-    NORMAL = "normal"
-    ITALIC = "italic"
-    BOLD = "bold"
-    BOLDITALIC = "bolditalic"
-    LEFT = "left"
-    CENTER = "center"
-    RIGHT = "right"
-    BOTTOM = "bottom"
-    TOP = "top"
-    BASELINE = "alphabetic"
-    MIDDLE = "middle"
+    HALF_PI: float = math.pi / 2.0
+    """A number constant that's approximately 1.5708."""
+
+    PI: float = math.pi
+    """A number constant that's approximately 3.1416."""
+
+    QUARTER_PI: float = math.pi / 4.0
+    """A number constant that's approximately 0.7854."""
+
+    TAU: float = math.tau
+    """A number constant that's approximately 6.2382."""
+
+    TWO_PI: float = math.tau
+    """A number constant that's approximately 6.2382."""
+
+    NORMAL: str = "normal"
+    """A string constant used with the `text_style()` method."""
+
+    ITALIC: str = "italic"
+    """A string constant used with the `text_style()` method."""
+
+    BOLD: str = "bold"
+    """A string constant used with the `text_style()` method."""
+
+    BOLDITALIC: str = "bolditalic"
+    """A string constant used with the `text_style()` method."""
+
+    LEFT: str = "left"
+    """A string constant used with the `text_align()` method."""
+
+    CENTER: str = "center"
+    """A string constant used with the `text_align()` method."""
+
+    RIGHT: str = "right"
+    """A string constant used with the `text_align()` method."""
+
+    BOTTOM: str = "bottom"
+    """A string constant used with the `text_align()` method."""
+
+    TOP: str = "top"
+    """A string constant used with the `text_align()` method."""
+
+    BASELINE: str = "alphabetic"
+    """A string constant used with the `text_align()` method."""
+
+    MIDDLE: str = "middle"
+    """A string constant used with the `text_align()` method."""
+
     _DEFAULT_STROKE = "black"
     _DEFAULT_STROKE_WEIGHT = 1
     _DEFAULT_LINE_CAP = "round"
@@ -51,13 +83,21 @@ class Sketch:
         pixel_denstiy: int = 2,
     ):
         # Create the Canvas.
-        self.width = width
-        self.height = height
-        self.pixel_density = pixel_denstiy
-        self.canvas = Canvas(
+        self.width: int = width
+        """The width of the canvas in pixels."""
+
+        self.height: int = height
+        """The height of the canvas in pixels."""
+
+        self.pixel_density: int = pixel_denstiy
+        """The number of physical pixels used to draw a pixel on the canvas."""
+
+        self.canvas: Canvas = Canvas(
             width=width * pixel_denstiy,
             height=height * pixel_denstiy,
             layout={"width": f"{width}px", "height": f"{height}px"})
+        """The `Canvas` widget used for drawing."""
+        
         # Set default the styles.
         self._init_style()
         # Set the default transformations.
@@ -65,7 +105,9 @@ class Sketch:
         # Create an empty list for shape vertices.
         self._vertices = []
         # Set the current frame count (for animation).
-        self.frame_count = 0
+        self.frame_count: int = 0
+        """The number of frames drawn since the sketch started."""
+
         self._is_looping = False
 
     def _init_transformation(self):
@@ -1789,6 +1831,7 @@ class Sketch:
         start = time.time()
         end = start + seconds
         delay *= 0.001
+        self.frame_count = 0
         while time.time() < end:
             with hold_canvas():
                 a, b, c, d, e, f = self._unpack_transform()
