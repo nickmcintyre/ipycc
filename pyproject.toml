@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling >= 1.26"]
+requires = ["hatchling >= 1.27"]
 build-backend = "hatchling.build"
 
 [project]
@@ -29,14 +29,15 @@ license-files = ["LICENSE"]
 keywords = [
     "Art",
     "Math",
-    "Visualization",
     "Jupyter",
     "p5.js",
-    "Turtle",
+    "Processing",
     "Sketch",
+    "Turtle",
+    "Visualization",
 ]
 dependencies = [
-    "ipycanvas >= 0.14.1",
+    "ipycanvas >= 0.14.3",
 ]
 
 [project.urls]

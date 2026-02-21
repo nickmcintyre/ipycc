@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import math
 import time
 from ipycanvas import hold_canvas
@@ -115,12 +116,56 @@ class _Screen:
         self.height = height
         self._sketch = Sketch(self.width, self.height)
         self._sketch_manager = self._sketch.canvas._canvas_manager
+        self._colormode = 1.0
         self._bgcolor = "white"
         self._sketch.background(self._bgcolor)
         self._turtles = []
         self._delayvalue = 10
         self._tracing = 1
         self.xscale = self.yscale = 1.0
+    
+    def _iscolorstring(self, color) -> bool:
+        """Check if the string color is a legal Tkinter color string.
+        """
+        return color in named_colors
+
+    def _colorstr(self, color: str | tuple[int | float]) -> str:
+        """Return color string corresponding to args.
+
+        Argument may be a string or a tuple of three
+        numbers corresponding to actual colormode,
+        i.e. in the range 0<=n<=colormode.
+
+        If the argument doesn't represent a color,
+        an error is raised.
+        """
+        if len(color) == 1:
+            color = color[0]
+        if isinstance(color, str):
+            if self._iscolorstring(color) or color == "":
+                return named_colors[color]
+            else:
+                raise TurtleGraphicsError("bad color string: %s" % str(color))
+        try:
+            r, g, b = color
+        except (TypeError, ValueError):
+            raise TurtleGraphicsError("bad color arguments: %s" % str(color))
+        if self._colormode == 1.0:
+            r, g, b = [round(255.0 * x) for x in (r, g, b)]
+        if not ((0 <= r <= 255) and (0 <= g <= 255) and (0 <= b <= 255)):
+            raise TurtleGraphicsError("bad color sequence: %s" % str(color))
+        return "#%02x%02x%02x" % (r, g, b)
+
+    def _color(self, cstr) -> str | tuple:
+        if not cstr.startswith("#"):
+            return cstr
+        if len(cstr) == 7:
+            cl = [int(cstr[i:i + 2], 16) for i in (1, 3, 5)]
+        elif len(cstr) == 4:
+            cl = [16 * int(cstr[h], 16) for h in cstr[1:]]
+        else:
+            raise TurtleGraphicsError("bad colorstring: %s" % cstr)
+        return tuple(c * self._colormode / 255 for c in cl)
 
     def add_turtle(self, t):
         """Adds a turtle to be drawn."""
@@ -256,10 +301,20 @@ def showscreen():
     _SCREEN.show()
 
 
-def tracer(n: int):
-    """Turns turtle animation on/off for updating drawings.
+def tracer(n: int = None, delay: int = None) -> int:
+    """Turns turtle animation on/off and set delay for updating drawings.
 
-    The parameter, `n`, must be either 0 (off) or 1 (on).
+    Optional arguments:
+    - `n` -- a nonnegative integer
+    - `delay` -- a nonnegative integer
+    
+    If no argument is passed, the current rate of screen updates is returned. The
+    default value is 1.
+
+    If `n` is given, only each n-th regular screen update is really performed.
+    This feature can be used to accelerate the drawing of complex graphics.
+
+    If `delay` is given, it sets the screen's delay value.
     
     **Example**
     ```python
@@ -271,16 +326,18 @@ def tracer(n: int):
     # Create a turtle.
     t = Turtle()
 
-    # Draw without animation.
-    tracer(0)
-    for i in range(100):
-        length = i * 5
-        t.forward(length)
-        t.left(90)
-    tracer(1)
+    # Draw without every 8th frame with a delay of 25.
+    tracer(8, 25)
+    dist = 2
+    for i in range(200):
+        fd(dist)
+        rt(90)
+        dist += 2
     ```
     """
-    _SCREEN._tracing = n
+    if n is None:
+        return _SCREEN._tracing
+    _SCREEN._tracing = int(n)
     if n == 0:
         _SCREEN._sketch_manager._caching = True
     elif n == 1:
@@ -288,6 +345,56 @@ def tracer(n: int):
         _SCREEN._sketch_manager._caching = False
         _SCREEN._sketch_manager.flush()
 
+
+def delay(delay: int = None) -> int:
+    """ Return or set the drawing delay in milliseconds.
+
+    Optional argument:
+    `delay` -- positive integer
+
+    **Example**
+    ```python
+    from ipycc.turtle import delay
+
+    delay(15)
+    print(delay()) # 15
+    ```
+    """
+    if delay is None:
+        return _SCREEN._delayvalue
+    _SCREEN._delayvalue = int(delay)
+
+@contextmanager
+def no_animation():
+    """Temporarily turn off auto-updating the screen.
+
+    This is useful for drawing complex shapes where even the fastest setting
+    is too slow. Once this context manager is exited, the drawing will
+    be displayed.
+
+    **Example**
+    ```python
+    from ipycc.turtle import Turtle, showscreen, no_animation
+
+    # Show the screen.
+    showscreen()
+
+    # Create a turtle.
+    t = Turtle()
+
+    # Draw a circle without animation.
+    with no_animation():
+        for i in range(360):
+            t.forward(1)
+            t.left(1)
+    ```
+    """
+    t = tracer()
+    try:
+        tracer(0)
+        yield
+    finally:
+        tracer(t)
 
 def clearscreen():
     """Delete all drawings from the screen.
@@ -342,6 +449,37 @@ def resetscreen():
     for t in _SCREEN._turtles:
         t.reset()
 
+def colormode(cmode: int | float = None) -> None | int | float:
+    """Return the colormode or set it to 1.0 or 255.
+
+    Optional argument:
+    `cmode` -- one of the values 1.0 or 255
+
+    r, g, b values of colortriples have to be in range `0..cmode`.
+
+    **Example**
+    ```python
+    from ipycc.turtle import Turtle, showscreen
+
+    # Show the screen.
+    showscreen()
+
+    # Create a turtle.
+    t = Turtle()
+
+    # Print the turtle's default color mode.
+    print(t.colormode()) # 1.0
+    # Change the turtle's color mode and change its color.
+    t.colormode(255)
+    t.color(240, 160, 80)
+    ```
+    """
+    if cmode is None:
+        return _SCREEN._colormode
+    if cmode == 1.0:
+        _SCREEN._colormode = float(cmode)
+    elif cmode == 255:
+        _SCREEN._colormode = int(cmode)
 
 class Turtle:
     """A class to describe a virtual turtle robot drawing on a screen."""
@@ -417,6 +555,62 @@ class Turtle:
         if isinstance(self._fillpath, list):
             self._fillpath.append(end)
         self._position = end
+        self._update()
+
+    def teleport(self, x=None, y=None, *, fill_gap: bool = False) -> None:
+        """Instantly move turtle to an absolute position.
+
+        Arguments:
+        x -- a number      or     None
+        y -- a number             None
+        fill_gap -- a boolean     This argument must be specified by name.
+
+        call: teleport(x, y)         # two coordinates
+        --or: teleport(x)            # teleport to x position, keeping y as is
+        --or: teleport(y=y)          # teleport to y position, keeping x as is
+        --or: teleport(x, y, fill_gap=True)
+                                     # teleport but fill the gap in between
+
+        Move turtle to an absolute position. Unlike goto(x, y), a line will not
+        be drawn. The turtle's orientation does not change. If currently
+        filling, the polygon(s) teleported from will be filled after leaving,
+        and filling will begin again after teleporting. This can be disabled
+        with fill_gap=True, which makes the imaginary line traveled during
+        teleporting act as a fill barrier like in goto(x, y).
+
+        **Example**
+        ```python
+        from ipycc.turtle import Turtle, showscreen
+
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
+        t = Turtle()
+
+        tp = t.pos()
+        print(tp)      # (0.00,0.00)
+        t.teleport(60)
+        print(t.pos()) # (60.00,0.00)
+        t.teleport(y=10)
+        print(t.pos()) # (60.00,10.00)
+        t.teleport(20, 30)
+        print(t.pos()) # (20.00,30.00)
+        ```
+        """
+        pendown = self.isdown()
+        was_filling = self.filling()
+        if pendown:
+            self.penup()
+        if was_filling and not fill_gap:
+            self.end_fill()
+        new_x = x if x is not None else self._position[0]
+        new_y = y if y is not None else self._position[1]
+        self._position = Vec2D(new_x, new_y)
+        if pendown:
+            self.pendown()
+        if was_filling and not fill_gap:
+            self.begin_fill()
         self._update()
 
     def forward(self, distance: int | float):
@@ -737,7 +931,7 @@ class Turtle:
         """
         if not color:
             if isinstance(size, (str, tuple)):
-                color = self._colorstr(size)
+                color = self._screen._colorstr(size)
                 size = self._pensize + max(self._pensize, 4)
             else:
                 color = self._pencolor
@@ -746,7 +940,7 @@ class Turtle:
         else:
             if size is None:
                 size = self._pensize + max(self._pensize, 4)
-            color = self._colorstr(color)
+            color = self._screen._colorstr(color)
         self._pen.canvas.save()
         self._pen.no_stroke()
         self._pen.fill(color)
@@ -982,12 +1176,12 @@ class Turtle:
         result /= self._degreesPerAU
         return (self._angleOffset + self._angleOrient*result) % self._fullcircle
 
-    def distance(self, x: int | float | tuple | Vec2D, y: int | float = None) -> float:
+    def distance(self, x, y: int | float = None) -> float:
         """Return the distance from the turtle to `(x,y)` in turtle step units.
 
         Arguments:
-        - `x` -- a number   or  a pair/vector of numbers   or   a turtle instance
-        - `y` -- a number   (optional)
+        - `x` -- a number or a pair/vector of numbers or a `Turtle` instance
+        - `y` -- a number (optional)
 
         **Example**
         ```python
@@ -1018,6 +1212,8 @@ class Turtle:
             pos = x
         elif isinstance(x, tuple):
             pos = Vec2D(*x)
+        elif isinstance(x, Turtle):
+            pos = x._position
         return abs(pos - self._position)
 
     def _setDegreesPerAU(self, fullcircle):
@@ -1201,81 +1397,6 @@ class Turtle:
         """
         return self._drawing
 
-    def _iscolorstring(self, color) -> bool:
-        """Check if the string color is a legal Tkinter color string.
-        """
-        return color in named_colors
-
-    def _colorstr(self, color: str | tuple[int | float]) -> str:
-        """Return color string corresponding to args.
-
-        Argument may be a string or a tuple of three
-        numbers corresponding to actual colormode,
-        i.e. in the range 0<=n<=colormode.
-
-        If the argument doesn't represent a color,
-        an error is raised.
-        """
-        if len(color) == 1:
-            color = color[0]
-        if isinstance(color, str):
-            if self._iscolorstring(color) or color == "":
-                return named_colors[color]
-            else:
-                raise TurtleGraphicsError("bad color string: %s" % str(color))
-        try:
-            r, g, b = color
-        except (TypeError, ValueError):
-            raise TurtleGraphicsError("bad color arguments: %s" % str(color))
-        if self._colormode == 1.0:
-            r, g, b = [round(255.0 * x) for x in (r, g, b)]
-        if not ((0 <= r <= 255) and (0 <= g <= 255) and (0 <= b <= 255)):
-            raise TurtleGraphicsError("bad color sequence: %s" % str(color))
-        return "#%02x%02x%02x" % (r, g, b)
-
-    def _color(self, cstr) -> str | tuple:
-        if not cstr.startswith("#"):
-            return cstr
-        if len(cstr) == 7:
-            cl = [int(cstr[i:i + 2], 16) for i in (1, 3, 5)]
-        elif len(cstr) == 4:
-            cl = [16 * int(cstr[h], 16) for h in cstr[1:]]
-        else:
-            raise TurtleGraphicsError("bad colorstring: %s" % cstr)
-        return tuple(c * self._colormode / 255 for c in cl)
-
-    def colormode(self, cmode: int | float = None) -> None | int | float:
-        """Return the colormode or set it to 1.0 or 255.
-
-        Optional argument:
-        `cmode` -- one of the values 1.0 or 255
-
-        r, g, b values of colortriples have to be in range `0..cmode`.
-
-        **Example**
-        ```python
-        from ipycc.turtle import Turtle, showscreen
-
-        # Show the screen.
-        showscreen()
-
-        # Create a turtle.
-        t = Turtle()
-
-        # Print the turtle's default color mode.
-        print(t.colormode()) # 1.0
-        # Change the turtle's color mode and change its color.
-        t.colormode(255)
-        t.color(240, 160, 80)
-        ```
-        """
-        if cmode is None:
-            return self._colormode
-        if cmode == 1.0:
-            self._colormode = float(cmode)
-        elif cmode == 255:
-            self._colormode = int(cmode)
-
     def color(self, *args) -> None | str | tuple:
         """Return or set the pencolor and fillcolor.
 
@@ -1324,8 +1445,8 @@ class Turtle:
                 pcolor, fcolor = args
             elif l == 3:
                 pcolor = fcolor = args
-            pcolor = self._colorstr(pcolor)
-            fcolor = self._colorstr(fcolor)
+            pcolor = self._screen._colorstr(pcolor)
+            fcolor = self._screen._colorstr(fcolor)
             self._pencolor = pcolor
             self._pen.stroke(self._pencolor)
             self._pen.stroke_weight(self._pensize)
@@ -1333,7 +1454,7 @@ class Turtle:
             self._pen.fill(self._fillcolor)
             self._update()
         else:
-            return self._color(self._pencolor), self._color(self._fillcolor)
+            return self._screen._color(self._pencolor), self._screen._color(self._fillcolor)
 
     def pencolor(self, *args) -> None | str | tuple:
         """ Return or set the pencolor.
@@ -1378,7 +1499,7 @@ class Turtle:
         ```
         """
         if args:
-            color = self._colorstr(args)
+            color = self._screen._colorstr(args)
             if color == self._pencolor:
                 return
             self._pencolor = color
@@ -1386,7 +1507,7 @@ class Turtle:
             self._pen.stroke_weight(self._pensize)
             self._update()
         else:
-            return self._color(self._pencolor)
+            return self._screen._color(self._pencolor)
 
     def fillcolor(self, *args) -> None | str | tuple:
         """Return or set the fillcolor.
@@ -1431,14 +1552,14 @@ class Turtle:
         ```
         """
         if args:
-            color = self._colorstr(args)
+            color = self._screen._colorstr(args)
             if color == self._fillcolor:
                 return
             self._fillcolor = color
             self._pen.fill(self._fillcolor)
             self._update()
         else:
-            return self._color(self._fillcolor)
+            return self._screen._color(self._fillcolor)
 
     def filling(self) -> bool:
         """Return fillstate (`True` if filling, `False` otherwise).
@@ -1466,6 +1587,36 @@ class Turtle:
         """
         return isinstance(self._fillpath, list)
 
+    @contextmanager
+    def fill(self):
+        """A context manager for filling a shape.
+
+        No argument.
+
+        Implicitly ensures the code block is wrapped with
+        `begin_fill()` and `end_fill()`.
+
+        **Example**
+        ```python
+        from ipycc.turtle import Turtle, showscreen
+
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
+        t = Turtle()
+        t.color("black", "red")
+
+        # Fill.
+        with t.fill():
+            t.circle(60)
+        """
+        self.begin_fill()
+        try:
+            yield
+        finally:
+            self.end_fill()
+
     def begin_fill(self):
         """Called just before drawing a shape to be filled.
 
@@ -1486,15 +1637,9 @@ class Turtle:
 
         # Begin filling.
         t.begin_fill()
-        # Begin creating a polygon.
-        t.begin_poly()
-        for i in range(4):
-            t.forward(50)
-            t.left(90)
-        t.end_poly()
-        # Stop creating a polygon.
-        t.end_fill()
+        t.circle(60)
         # Stop filling.
+        t.end_fill()
         ```
         """
         self._fillpath = [self._position]
@@ -1516,17 +1661,12 @@ class Turtle:
 
         # Set the turtle's pen and fill color.
         t.color("black", "red")
+    
         # Begin filling.
         t.begin_fill()
-        # Begin creating a polygon.
-        t.begin_poly()
-        for i in range(4):
-            t.forward(50)
-            t.left(90)
-        t.end_poly()
-        # Stop creating a polygon.
-        t.end_fill()
+        t.circle(60)
         # Stop filling.
+        t.end_fill()
         ```
         """
         if self.filling():
@@ -1538,6 +1678,47 @@ class Turtle:
                 self._pen.end_shape()
             self._fillpath = None
             self._update()
+
+    @contextmanager
+    def poly(self):
+        """A context manager for recording the vertices of a polygon.
+
+        No argument.
+
+        Implicitly ensures that the code block is wrapped with
+        `begin_poly()` and `end_poly()`
+
+        **Example**
+        ```python
+        from ipycc.turtle import Turtle, showscreen
+
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
+        t = Turtle()
+
+        # Set the turtle's pen and fill color.
+        t.color("black", "red")
+
+        # Begin filling.
+        t.begin_fill()
+
+        # Create a polygon.
+        with t.poly():
+            for i in range(4):
+                t.forward(50)
+                t.left(90)
+        
+        # Stop filling.
+        t.end_fill()
+        ```
+        """
+        self.begin_poly()
+        try:
+            yield
+        finally:
+            self.end_poly()
 
     def begin_poly(self):
         """Start recording the vertices of a polygon.
@@ -1559,15 +1740,19 @@ class Turtle:
 
         # Set the turtle's pen and fill color.
         t.color("black", "red")
+
         # Begin filling.
         t.begin_fill()
+
         # Begin creating a polygon.
         t.begin_poly()
         for i in range(4):
             t.forward(50)
             t.left(90)
+
         # Stop creating a polygon.
         t.end_poly()
+
         # Stop filling.
         t.end_fill()
         ```
@@ -1595,20 +1780,94 @@ class Turtle:
 
         # Set the turtle's pen and fill color.
         t.color("black", "red")
+    
         # Begin filling.
         t.begin_fill()
+    
         # Begin creating a polygon.
         t.begin_poly()
         for i in range(4):
             t.forward(50)
             t.left(90)
+
         # Stop creating a polygon.
         t.end_poly()
+
         # Stop filling.
         t.end_fill()
         ```
         """
         self._creatingPoly = False
+
+    def circle(
+        self, radius: int | float, extent: int | float = None, steps: int = None
+    ):
+        """Draw a circle with given radius.
+
+        Arguments:
+        `radius` -- a number
+        `extent` (optional) -- a number
+        `steps` (optional) -- an integer
+
+        Draw a circle with given radius. The center is radius units left
+        of the turtle; extent - an angle - determines which part of the
+        circle is drawn. If extent is not given, draw the entire circle.
+        If extent is not a full circle, one endpoint of the arc is the
+        current pen position. Draw the arc in counterclockwise direction
+        if radius is positive, otherwise in clockwise direction. Finally
+        the direction of the turtle is changed by the amount of extent.
+
+        As the circle is approximated by an inscribed regular polygon,
+        steps determines the number of steps to use. If not given,
+        it will be calculated automatically. Maybe used to draw regular
+        polygons.
+
+        call: circle(radius)                  # full circle
+        --or: circle(radius, extent)          # arc
+        --or: circle(radius, extent, steps)
+        --or: circle(radius, steps=6)         # 6-sided polygon
+
+        **Example**
+        ```python
+        from ipycc.turtle import Turtle, showscreen
+
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
+        t = Turtle()
+
+        t.circle(50)
+        t.circle(120, 180)  # semicircle
+        ```
+        """
+        speed = self.speed()
+        if extent is None:
+            extent = self._fullcircle
+        if steps is None:
+            frac = abs(extent) / self._fullcircle
+            steps = 1+int(min(11+abs(radius)/6.0, 59.0)*frac)
+        w = 1.0 * extent / steps
+        w2 = 0.5 * w
+        l = 2.0 * radius * math.sin(math.radians(w2)*self._degreesPerAU)
+        if radius < 0:
+            l, w, w2 = -l, -w, -w2
+        tr = tracer()
+        dl = delay()
+        if speed == 0:
+            tracer(0, 0)
+        else:
+            self.speed(0)
+        self._rotate(w2)
+        for i in range(steps):
+            self.speed(speed)
+            self._go(l)
+            self.speed(0)
+            self._rotate(w)
+        self._rotate(-w2)
+        if speed == 0:
+            tracer(tr, dl)
+        self.speed(speed)
 
     def reset(self):
         """Return the turtle to its initial state and clear its drawings from
@@ -1647,7 +1906,6 @@ class Turtle:
         self._pen.no_fill()
         self._creatingPoly = False
         self._position = Vec2D(0, 0)
-        self._colormode = 1.0
         self._shape = "classic"
         self._stretchfactor = (1.0, 1.0)
         self._shearfactor = 0.0
@@ -2032,49 +2290,47 @@ class Turtle:
         """
         self.tiltangle(angle + self.tiltangle())
 
-    # ========================================
-    #                Screen
-    # ========================================
 
-    def bgcolor(self, color: str | tuple[int | float] = None) -> None | str:
-        """Set or return backgroundcolor of the turtle's screen.
+def bgcolor(*args) -> None | str:
+    """Set or return backgroundcolor of the turtle's screen.
 
-        Arguments:
-        Four input formats are allowed:
-          - `bgcolor()`
-            Return the current background as color specification string,
-            possibly in hex-number format (see example).
-            May be used as input to another color/pencolor/fillcolor call.
-          - `bgcolor(colorstring)`
-            a [Tk color specification string](https://www.tcl-lang.org/man/tcl8.4/TkCmd/colors.htm),
-            such as `"red"` or `"yellow"`
-          - `bgcolor((r, g, b))`
-            *a tuple* of `r`, `g`, and `b`, which represent, an RGB color,
-            and each of `r`, `g`, and `b` are in the range `0..colormode`,
-            where `colormode` is either 1.0 or 255
-          - `bgcolor(r, g, b)`
-            `r`, `g`, and `b` represent an RGB color, and each of `r`, `g`,
-            and `b` are in the range `0..colormode`
+    Arguments:
+    Four input formats are allowed:
+        - `bgcolor()`
+        Return the current background as color specification string,
+        possibly in hex-number format (see example).
+        May be used as input to another color/pencolor/fillcolor call.
+        - `bgcolor(colorstring)`
+        a [Tk color specification string](https://www.tcl-lang.org/man/tcl8.4/TkCmd/colors.htm),
+        such as `"red"` or `"yellow"`
+        - `bgcolor((r, g, b))`
+        *a tuple* of `r`, `g`, and `b`, which represent, an RGB color,
+        and each of `r`, `g`, and `b` are in the range `0..colormode`,
+        where `colormode` is either 1.0 or 255
+        - `bgcolor(r, g, b)`
+        `r`, `g`, and `b` represent an RGB color, and each of `r`, `g`,
+        and `b` are in the range `0..colormode`
 
-        **Example**
-        ```python
-        from ipycc.turtle import Turtle, showscreen
+    **Example**
+    ```python
+    from ipycc.turtle import Turtle, showscreen
 
-        # Show the screen.
-        showscreen()
+    # Show the screen.
+    showscreen()
 
-        # Create a turtle.
-        t = Turtle()
+    # Create a turtle.
+    t = Turtle()
 
-        # Set the screen's background color and print it.
-        t.bgcolor("orange")
-        print(t.bgcolor()) # 'orange'
-        ```
-        """
-        if color is None:
-            return self._screen._bgcolor
-        self._screen._bgcolor = self._colorstr(color)
-        self._update()
+    # Set the screen's background color and print it.
+    t.bgcolor("orange")
+    print(t.bgcolor()) # 'orange'
+    ```
+    """
+    if args:
+        _SCREEN._bgcolor = _SCREEN._colorstr(args)
+        _SCREEN._update()
+    else:
+        return _SCREEN._bgcolor
 
 
 __all__ = ["Turtle", "Vec2D", "tracer", "setup", "showscreen", "clearscreen", "resetscreen"]
