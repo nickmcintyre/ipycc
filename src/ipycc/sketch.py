@@ -5,6 +5,7 @@ from ipycanvas import Canvas, hold_canvas
 from IPython.display import display
 import numpy as np
 
+
 class SketchError(Exception):
     """Some Sketch Error.
     """
