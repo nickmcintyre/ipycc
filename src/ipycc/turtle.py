@@ -122,6 +122,7 @@ class _Screen:
         self._turtles = []
         self._delayvalue = 10
         self._tracing = 1
+        self._updatecounter = 0
         self.xscale = self.yscale = 1.0
     
     def _iscolorstring(self, color) -> bool:
@@ -171,10 +172,21 @@ class _Screen:
         """Adds a turtle to be drawn."""
         if t not in self._turtles:
             self._turtles.append(t)
+    
+    def _incrementudc(self):
+        """Increment update counter."""
+        if self._tracing > 0:
+            self._updatecounter += 1
+            self._updatecounter %= self._tracing
 
     def _update(self):
         """Redraws the screen."""
-        if self._tracing == 1:
+        if self._tracing == 0:
+            return
+        self._incrementudc()
+        if self._updatecounter > 0:
+            self._sketch_manager._caching = True
+        if self._updatecounter == 0 and self._tracing > 0:
             with hold_canvas():
                 self._sketch.background(self._bgcolor)
                 for t in self._turtles:
@@ -184,11 +196,11 @@ class _Screen:
                     self._sketch.image(t._pen, 0, 0)
                     self._sketch.reset_matrix()
                     self._sketch.canvas.restore()
-                for t in self._turtles:
-                    self._sketch.canvas.save()
-                    self._sketch.scale(1, -1)
-                    self._sketch.translate(0, -self.height)
+                for t in self._turtles: 
                     if t.isvisible():
+                        self._sketch.canvas.save()
+                        self._sketch.scale(1, -1)
+                        self._sketch.translate(0, -self.height)
                         x, y = t._to_screen_coords(t._position)
                         self._sketch.translate(x, y)
                         angle = math.radians(t.heading() + t.tiltangle()) - math.pi / 2
@@ -202,8 +214,10 @@ class _Screen:
                         for v in shape:
                             self._sketch.vertex(sx * v[0], sy * v[1])
                         self._sketch.end_shape()
-                    self._sketch.reset_matrix()
-                    self._sketch.canvas.restore()
+                        self._sketch.reset_matrix()
+                        self._sketch.canvas.restore()
+            self._sketch_manager._caching = False
+            self._sketch_manager.flush()
 
     def _delay(self, ms: int | float):
         """Delays animation for a given number of milliseconds."""
@@ -325,7 +339,7 @@ def tracer(n: int = None, delay: int = None) -> int:
     # Create a turtle.
     t = Turtle()
 
-    # Draw without every 8th frame with a delay of 25.
+    # Draw every 8th frame with a delay of 25 ms.
     tracer(8, 25)
     dist = 2
     for i in range(200):
@@ -337,12 +351,11 @@ def tracer(n: int = None, delay: int = None) -> int:
     if n is None:
         return _SCREEN._tracing
     _SCREEN._tracing = int(n)
-    if n == 0:
-        _SCREEN._sketch_manager._caching = True
-    elif n == 1:
+    _SCREEN._updatecounter = 0
+    if delay is not None:
+        _SCREEN._delayvalue = int(delay)
+    if _SCREEN._tracing:
         _SCREEN._update()
-        _SCREEN._sketch_manager._caching = False
-        _SCREEN._sketch_manager.flush()
 
 
 def delay(delay: int = None) -> int:
@@ -519,9 +532,8 @@ class Turtle:
         """
         if self._screen._tracing == 0:
             return
-        elif self._screen._tracing == 1:
-            self._screen._update()
-            self._screen._delay(self._screen._delayvalue)
+        self._screen._update()
+        self._screen._delay(self._screen._delayvalue)
 
     def _go(self, distance: int | float):
         """Move turtle forward by specified distance"""
