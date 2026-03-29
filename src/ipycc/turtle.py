@@ -212,7 +212,6 @@ class _Screen:
     def replace(self):
         """Copy the screen and reassign its turtles."""
         screen = _Screen(self.width, self.height)
-        screen._sketch = Sketch(self.width, self.height)
         screen._bgcolor = self._bgcolor
         screen._sketch.background(self._bgcolor)
         screen._turtles = self._turtles
@@ -557,62 +556,6 @@ class Turtle:
         self._position = end
         self._update()
 
-    def teleport(self, x=None, y=None, *, fill_gap: bool = False) -> None:
-        """Instantly move turtle to an absolute position.
-
-        Arguments:
-        x -- a number      or     None
-        y -- a number             None
-        fill_gap -- a boolean     This argument must be specified by name.
-
-        call: teleport(x, y)         # two coordinates
-        --or: teleport(x)            # teleport to x position, keeping y as is
-        --or: teleport(y=y)          # teleport to y position, keeping x as is
-        --or: teleport(x, y, fill_gap=True)
-                                     # teleport but fill the gap in between
-
-        Move turtle to an absolute position. Unlike goto(x, y), a line will not
-        be drawn. The turtle's orientation does not change. If currently
-        filling, the polygon(s) teleported from will be filled after leaving,
-        and filling will begin again after teleporting. This can be disabled
-        with fill_gap=True, which makes the imaginary line traveled during
-        teleporting act as a fill barrier like in goto(x, y).
-
-        **Example**
-        ```python
-        from ipycc.turtle import Turtle, showscreen
-
-        # Show the screen.
-        showscreen()
-
-        # Create a turtle.
-        t = Turtle()
-
-        tp = t.pos()
-        print(tp)      # (0.00,0.00)
-        t.teleport(60)
-        print(t.pos()) # (60.00,0.00)
-        t.teleport(y=10)
-        print(t.pos()) # (60.00,10.00)
-        t.teleport(20, 30)
-        print(t.pos()) # (20.00,30.00)
-        ```
-        """
-        pendown = self.isdown()
-        was_filling = self.filling()
-        if pendown:
-            self.penup()
-        if was_filling and not fill_gap:
-            self.end_fill()
-        new_x = x if x is not None else self._position[0]
-        new_y = y if y is not None else self._position[1]
-        self._position = Vec2D(new_x, new_y)
-        if pendown:
-            self.pendown()
-        if was_filling and not fill_gap:
-            self.begin_fill()
-        self._update()
-
     def forward(self, distance: int | float):
         """Move the turtle forward by the specified distance.
 
@@ -755,8 +698,6 @@ class Turtle:
         - `x` -- a number or vector
         - `y` -- a number (optional)
 
-        call: `goto(x, y)`         # two coordinates
-
         Move turtle to an absolute position. If the pen is down,
         a line will be drawn. The turtle's orientation does not change.
 
@@ -783,6 +724,56 @@ class Turtle:
 
     setpos = goto
     setposition = goto
+
+    def teleport(self, x=None, y=None, *, fill_gap: bool = False) -> None:
+        """Instantly move turtle to an absolute position.
+
+        Arguments:
+        - `x` -- a number      or     `None`
+        - `y` -- a number             `None`
+        - `fill_gap` -- a boolean     This argument must be specified by name.
+
+        Move turtle to an absolute position. Unlike `goto(x, y)`, a line will not
+        be drawn. The turtle's orientation does not change. If currently
+        filling, the polygon(s) teleported from will be filled after leaving,
+        and filling will begin again after teleporting. This can be disabled
+        with `fill_gap=True`, which makes the imaginary line traveled during
+        teleporting act as a fill barrier like in `goto(x, y)`.
+
+        **Example**
+        ```python
+        from ipycc.turtle import Turtle, showscreen
+
+        # Show the screen.
+        showscreen()
+
+        # Create a turtle.
+        t = Turtle()
+
+        tp = t.pos()
+        print(tp)      # (0.00,0.00)
+        t.teleport(60)
+        print(t.pos()) # (60.00,0.00)
+        t.teleport(y=10)
+        print(t.pos()) # (60.00,10.00)
+        t.teleport(20, 30)
+        print(t.pos()) # (20.00,30.00)
+        ```
+        """
+        pendown = self.isdown()
+        was_filling = self.filling()
+        if pendown:
+            self.penup()
+        if was_filling and not fill_gap:
+            self.end_fill()
+        new_x = x if x is not None else self._position[0]
+        new_y = y if y is not None else self._position[1]
+        self._position = Vec2D(new_x, new_y)
+        if pendown:
+            self.pendown()
+        if was_filling and not fill_gap:
+            self.begin_fill()
+        self._update()
 
     def setx(self, x: int | float):
         """Set the turtle's first coordinate to `x`.
@@ -1100,6 +1091,8 @@ class Turtle:
             pos = x
         elif isinstance(x, tuple):
             pos = Vec2D(*x)
+        elif isinstance(x, Turtle):
+            pos = x._position
         x, y = pos - self._position
         result = round(math.degrees(math.atan2(y, x)), 10) % 360.0
         result /= self._degreesPerAU
@@ -1610,6 +1603,7 @@ class Turtle:
         # Fill.
         with t.fill():
             t.circle(60)
+        ```
         """
         self.begin_fill()
         try:
@@ -1805,27 +1799,22 @@ class Turtle:
         """Draw a circle with given radius.
 
         Arguments:
-        `radius` -- a number
-        `extent` (optional) -- a number
-        `steps` (optional) -- an integer
+        - `radius` -- a number
+        - `extent` (optional) -- a number
+        - `steps` (optional) -- an integer
 
-        Draw a circle with given radius. The center is radius units left
-        of the turtle; extent - an angle - determines which part of the
-        circle is drawn. If extent is not given, draw the entire circle.
-        If extent is not a full circle, one endpoint of the arc is the
+        Draw a circle with given radius. The center is `radius` units left
+        of the turtle; `extent` - an angle - determines which part of the
+        circle is drawn. If `extent` is not given, draw the entire circle.
+        If `extent` is not a full circle, one endpoint of the arc is the
         current pen position. Draw the arc in counterclockwise direction
-        if radius is positive, otherwise in clockwise direction. Finally
+        if `radius` is positive, otherwise in clockwise direction. Finally
         the direction of the turtle is changed by the amount of extent.
 
         As the circle is approximated by an inscribed regular polygon,
-        steps determines the number of steps to use. If not given,
-        it will be calculated automatically. Maybe used to draw regular
+        `steps` determines the number of steps to use. If not given,
+        it will be calculated automatically. May be used to draw regular
         polygons.
-
-        call: circle(radius)                  # full circle
-        --or: circle(radius, extent)          # arc
-        --or: circle(radius, extent, steps)
-        --or: circle(radius, steps=6)         # 6-sided polygon
 
         **Example**
         ```python
@@ -2260,7 +2249,7 @@ class Turtle:
         """Rotate the turtleshape by angle.
 
         Argument:
-        `angle` - a number
+        `angle` -- a number
 
         Rotate the turtleshape by `angle` from its current tilt-angle,
         but don't change the turtle's heading (direction of movement).
@@ -2333,4 +2322,4 @@ def bgcolor(*args) -> None | str:
         return _SCREEN._bgcolor
 
 
-__all__ = ["Turtle", "Vec2D", "tracer", "setup", "showscreen", "clearscreen", "resetscreen"]
+__all__ = ["Turtle", "Vec2D", "tracer", "setup", "showscreen", "clearscreen", "resetscreen", "no_animation", "bgcolor"]
