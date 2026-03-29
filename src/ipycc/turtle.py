@@ -376,6 +376,7 @@ def delay(delay: int = None) -> int:
         return _SCREEN._delayvalue
     _SCREEN._delayvalue = int(delay)
 
+
 @contextmanager
 def no_animation():
     """Temporarily turn off auto-updating the screen.
@@ -407,6 +408,7 @@ def no_animation():
         yield
     finally:
         tracer(t)
+
 
 def clearscreen():
     """Delete all drawings from the screen.
@@ -461,6 +463,7 @@ def resetscreen():
     for t in _SCREEN._turtles:
         t.reset()
 
+
 def colormode(cmode: int | float = None) -> None | int | float:
     """Return the colormode or set it to 1.0 or 255.
 
@@ -492,6 +495,49 @@ def colormode(cmode: int | float = None) -> None | int | float:
         _SCREEN._colormode = float(cmode)
     elif cmode == 255:
         _SCREEN._colormode = int(cmode)
+
+
+def bgcolor(*args) -> None | str:
+    """Set or return backgroundcolor of the turtle's screen.
+
+    Arguments:
+    Four input formats are allowed:
+        - `bgcolor()`
+        Return the current background as color specification string,
+        possibly in hex-number format (see example).
+        May be used as input to another color/pencolor/fillcolor call.
+        - `bgcolor(colorstring)`
+        a [Tk color specification string](https://www.tcl-lang.org/man/tcl8.4/TkCmd/colors.htm),
+        such as `"red"` or `"yellow"`
+        - `bgcolor((r, g, b))`
+        *a tuple* of `r`, `g`, and `b`, which represent, an RGB color,
+        and each of `r`, `g`, and `b` are in the range `0..colormode`,
+        where `colormode` is either 1.0 or 255
+        - `bgcolor(r, g, b)`
+        `r`, `g`, and `b` represent an RGB color, and each of `r`, `g`,
+        and `b` are in the range `0..colormode`
+
+    **Example**
+    ```python
+    from ipycc.turtle import Turtle, showscreen
+
+    # Show the screen.
+    showscreen()
+
+    # Create a turtle.
+    t = Turtle()
+
+    # Set the screen's background color and print it.
+    t.bgcolor("orange")
+    print(t.bgcolor()) # 'orange'
+    ```
+    """
+    if args:
+        _SCREEN._bgcolor = _SCREEN._colorstr(args)
+        _SCREEN._update()
+    else:
+        return _SCREEN._bgcolor
+
 
 class Turtle:
     """A class to describe a virtual turtle robot drawing on a screen."""
@@ -2292,46 +2338,4 @@ class Turtle:
         self.tiltangle(angle + self.tiltangle())
 
 
-def bgcolor(*args) -> None | str:
-    """Set or return backgroundcolor of the turtle's screen.
-
-    Arguments:
-    Four input formats are allowed:
-        - `bgcolor()`
-        Return the current background as color specification string,
-        possibly in hex-number format (see example).
-        May be used as input to another color/pencolor/fillcolor call.
-        - `bgcolor(colorstring)`
-        a [Tk color specification string](https://www.tcl-lang.org/man/tcl8.4/TkCmd/colors.htm),
-        such as `"red"` or `"yellow"`
-        - `bgcolor((r, g, b))`
-        *a tuple* of `r`, `g`, and `b`, which represent, an RGB color,
-        and each of `r`, `g`, and `b` are in the range `0..colormode`,
-        where `colormode` is either 1.0 or 255
-        - `bgcolor(r, g, b)`
-        `r`, `g`, and `b` represent an RGB color, and each of `r`, `g`,
-        and `b` are in the range `0..colormode`
-
-    **Example**
-    ```python
-    from ipycc.turtle import Turtle, showscreen
-
-    # Show the screen.
-    showscreen()
-
-    # Create a turtle.
-    t = Turtle()
-
-    # Set the screen's background color and print it.
-    t.bgcolor("orange")
-    print(t.bgcolor()) # 'orange'
-    ```
-    """
-    if args:
-        _SCREEN._bgcolor = _SCREEN._colorstr(args)
-        _SCREEN._update()
-    else:
-        return _SCREEN._bgcolor
-
-
-__all__ = ["Turtle", "Vec2D", "tracer", "setup", "showscreen", "clearscreen", "resetscreen", "no_animation", "bgcolor"]
+__all__ = ["Turtle", "Vec2D", "setup", "showscreen", "tracer", "delay", "no_animation", "clearscreen", "resetscreen", "colormode", "bgcolor"]
