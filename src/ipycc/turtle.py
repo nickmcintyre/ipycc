@@ -229,10 +229,9 @@ class _Screen:
         screen._bgcolor = self._bgcolor
         screen._sketch.background(self._bgcolor)
         screen._turtles = self._turtles
-        for t in screen._turtles:
-            t._screen = screen
         screen._delayvalue = self._delayvalue
         screen._tracing = self._tracing
+        screen._updatecounter = self._updatecounter
         screen.xscale = self.xscale
         screen.yscale = self.yscale
         return screen
@@ -543,14 +542,13 @@ class Turtle:
     """A class to describe a virtual turtle robot drawing on a screen."""
 
     def __init__(self):
-        self._screen = _SCREEN
-        self._pen = Sketch(self._screen.width, self._screen.height)
-        self._screen.add_turtle(self)
+        self._pen = Sketch(_SCREEN.width, _SCREEN.height)
+        _SCREEN.add_turtle(self)
         self.reset()
 
     def _to_screen_coords(self, v: Vec2D) -> Vec2D:
-        x = self._screen.width * 0.5 + v[0]
-        y = self._screen.height * 0.5 + v[1]
+        x = _SCREEN.width * 0.5 + v[0]
+        y = _SCREEN.height * 0.5 + v[1]
         return Vec2D(x, y)
 
     def show(self):
@@ -567,7 +565,7 @@ class Turtle:
         t = Turtle()
         ```
         """
-        self._screen.show()
+        _SCREEN.show()
 
     # ========================================
     #              Turtle Motion
@@ -576,10 +574,10 @@ class Turtle:
     def _update(self):
         """Perform a Turtle-data update.
         """
-        if self._screen._tracing == 0:
+        if _SCREEN._tracing == 0:
             return
-        self._screen._update()
-        self._screen._delay(self._screen._delayvalue)
+        _SCREEN._update()
+        _SCREEN._delay(_SCREEN._delayvalue)
 
     def _go(self, distance: int | float):
         """Move turtle forward by specified distance"""
@@ -592,9 +590,9 @@ class Turtle:
         on this one.
         """
         start = self._position
-        if self._speed and self._screen._tracing == 1:
+        if self._speed and _SCREEN._tracing == 1:
             diff = end - start
-            diffsq = (diff[0] * self._screen.xscale)**2 + (diff[1] * self._screen.yscale)**2
+            diffsq = (diff[0] * _SCREEN.xscale)**2 + (diff[1] * _SCREEN.yscale)**2
             nhops = 1 + int((diffsq**0.5) / (3 * (1.1**self._speed) * self._speed))
             delta = diff * (1.0 / nhops)
             for n in range(1, nhops + 1):
@@ -980,7 +978,7 @@ class Turtle:
         """
         if not color:
             if isinstance(size, (str, tuple)):
-                color = self._screen._colorstr(size)
+                color = _SCREEN._colorstr(size)
                 size = self._pensize + max(self._pensize, 4)
             else:
                 color = self._pencolor
@@ -989,7 +987,7 @@ class Turtle:
         else:
             if size is None:
                 size = self._pensize + max(self._pensize, 4)
-            color = self._screen._colorstr(color)
+            color = _SCREEN._colorstr(color)
         self._pen.canvas.save()
         self._pen.no_stroke()
         self._pen.fill(color)
@@ -1496,8 +1494,8 @@ class Turtle:
                 pcolor, fcolor = args
             elif l == 3:
                 pcolor = fcolor = args
-            pcolor = self._screen._colorstr(pcolor)
-            fcolor = self._screen._colorstr(fcolor)
+            pcolor = _SCREEN._colorstr(pcolor)
+            fcolor = _SCREEN._colorstr(fcolor)
             self._pencolor = pcolor
             self._pen.stroke(self._pencolor)
             self._pen.stroke_weight(self._pensize)
@@ -1505,7 +1503,7 @@ class Turtle:
             self._pen.fill(self._fillcolor)
             self._update()
         else:
-            return self._screen._color(self._pencolor), self._screen._color(self._fillcolor)
+            return _SCREEN._color(self._pencolor), _SCREEN._color(self._fillcolor)
 
     def pencolor(self, *args) -> None | str | tuple:
         """ Return or set the pencolor.
@@ -1550,7 +1548,7 @@ class Turtle:
         ```
         """
         if args:
-            color = self._screen._colorstr(args)
+            color = _SCREEN._colorstr(args)
             if color == self._pencolor:
                 return
             self._pencolor = color
@@ -1558,7 +1556,7 @@ class Turtle:
             self._pen.stroke_weight(self._pensize)
             self._update()
         else:
-            return self._screen._color(self._pencolor)
+            return _SCREEN._color(self._pencolor)
 
     def fillcolor(self, *args) -> None | str | tuple:
         """Return or set the fillcolor.
@@ -1603,14 +1601,14 @@ class Turtle:
         ```
         """
         if args:
-            color = self._screen._colorstr(args)
+            color = _SCREEN._colorstr(args)
             if color == self._fillcolor:
                 return
             self._fillcolor = color
             self._pen.fill(self._fillcolor)
             self._update()
         else:
-            return self._screen._color(self._fillcolor)
+            return _SCREEN._color(self._fillcolor)
 
     def filling(self) -> bool:
         """Return fillstate (`True` if filling, `False` otherwise).
