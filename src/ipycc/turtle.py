@@ -497,7 +497,7 @@ def colormode(cmode: int | float = None) -> None | int | float:
 
 
 def bgcolor(*args) -> None | str:
-    """Set or return backgroundcolor of the turtle's screen.
+    """Set or return background color of the turtle's screen.
 
     Arguments:
     Four input formats are allowed:
@@ -518,17 +518,14 @@ def bgcolor(*args) -> None | str:
 
     **Example**
     ```python
-    from ipycc.turtle import Turtle, showscreen
+    from ipycc.turtle import showscreen, bgcolor
 
     # Show the screen.
     showscreen()
 
-    # Create a turtle.
-    t = Turtle()
-
     # Set the screen's background color and print it.
-    t.bgcolor("orange")
-    print(t.bgcolor()) # 'orange'
+    bgcolor("orange")
+    print(bgcolor()) # 'orange'
     ```
     """
     if args:
@@ -550,22 +547,6 @@ class Turtle:
         x = _SCREEN.width * 0.5 + v[0]
         y = _SCREEN.height * 0.5 + v[1]
         return Vec2D(x, y)
-
-    def show(self):
-        """Display the turtle's drawing sceen.
-
-        **Example**
-        ```python
-        from ipycc.turtle import Turtle, showscreen
-
-        # Show the screen.
-        showscreen()
-
-        # Create a turtle.
-        t = Turtle()
-        ```
-        """
-        _SCREEN.show()
 
     # ========================================
     #              Turtle Motion
