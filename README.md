@@ -1,13 +1,13 @@
 # [ipycc](https://ipy.cc)
 > A Python package for creative coding in Jupyter
 
-ipycc is a friendly tool for learning to code, making art, and exploring mathematics within [Jupyter](https://jupyter.org/) notebooks. Try it out at [https://code.ipy.cc](https://code.ipy.cc)!
+ipycc is a friendly tool for learning to code, making art, and exploring mathematics within [Jupyter](https://jupyter.org/) notebooks. It runs smoothly in [JupyterLite](https://jupyterlite.readthedocs.io/en/stable/howto/index.html), creating a nice way to start coding in the web browser without installing any software. Try it out at [https://code.ipy.cc](https://code.ipy.cc)!
 
-ipycc's `Sketch` class provides a beginner-friendly API for drawing that is heavily inspired by [p5.js](https://p5js.org). `Sketch` lovingly borrows from p5.js' source code and documentation, and mimics [py5](https://py5coding.org/) where possible. Under the hood, it uses the powerful [ipycanvas](https://ipycanvas.readthedocs.io/en/latest/index.html) package for drawing.
+ipycc provides two ways to draw. The first way is called a `Sketch`, which has commands (methods) for setting colors and drawing shapes such as triangles, circles, and rectangles. `Sketch` is heavily inspired by [p5.js](https://p5js.org) and borrows from its source code and documentation. It also mimics [py5](https://py5coding.org/) where possible. 
 
-The package also includes a (mostly) drop-in replacement for [Turtle graphics](https://docs.python.org/3/library/turtle.html) from the Python standard library. The `Turtle` class is based on the standard library's implementation and uses the `Sketch` class for rendering. ipycc bundles the standard library's `Vec2D` class for vector arithmetic along with a few helper functions.
+The second way to draw is called a `Turtle`, which includes methods for moving an imaginary turtle and setting its pen color. `Turtle` is a (mostly) drop-in replacement for [Turtle graphics](https://docs.python.org/3/library/turtle.html) from the Python standard library. It borrows from the standard library's source code and documentation, and bundles the `Vec2D` class along with a few helper functions.
 
-ipycc runs smoothly in [JupyterLite](https://jupyterlite.readthedocs.io/en/stable/howto/index.html), creating a nice way to start coding in the web browser without installing any software.
+Under the hood, ipycc draws using the powerful [ipycanvas](https://ipycanvas.readthedocs.io/en/latest/index.html) package.
 
 ## A tour of ipycc
 
@@ -68,8 +68,8 @@ def draw():
 
     # Style the circle.
     s.stroke_weight(5)
-    s.stroke(248, 248, 255)
-    s.fill("#FF00FF")
+    s.stroke(248, 248, 255) # ghostwhite in RGB
+    s.fill("#FF00FF") # fuchsia in hex
 
     # Draw the circle.
     s.circle(x, 200, 100)
@@ -114,17 +114,19 @@ for i in range(4):
 
 A black square with a sprial pattern drawn in green. The spiral is drawn one side at a time.
 ```python
-from ipycc.turtle import Turtle, showscreen
+from ipycc.turtle import Turtle, showscreen, bgcolor
 
 # Show the screen.
 showscreen()
+
+# Set the background color.
+bgcolor("black")
 
 # Create a turtle.
 t = Turtle()
 
 # Style the turtle.
-t.bgcolor("black")
-t.color(0, 1, 0)
+t.color(0, 1, 0) # green in RGB
 
 # Draw a spiral.
 for i in range(40):
@@ -133,9 +135,9 @@ for i in range(40):
     t.left(90)
 ```
 
-## Installation
+## Installing ipycc
 
-If you'd like to install ipycc locally on your computer, start by [downloading Python](https://www.python.org/downloads/). You can then create a virtual environment, install ipycc, and launch JupyterLab from your system shell like so:
+If you'd like to install ipycc locally on your computer, start by [downloading Python](https://www.python.org/downloads/). You can then create a virtual environment and install ipycc from your terminal like so:
 
 On Linux/macOS:
 ```sh
@@ -144,7 +146,6 @@ cd ipycc
 python3 -m venv venv
 source venv/bin/activate
 pip install jupyterlab ipycc
-jupyter lab
 ```
 
 On Windows:
@@ -154,12 +155,31 @@ cd ipycc
 py -m venv venv
 venv\Scripts\activate
 pip install jupyterlab ipycc
-jupyter lab
 ```
 
 The [Python Packaging User Guide](https://packaging.python.org/en/latest/tutorials/installing-packages/) has additional information to help you get up and running.
 
-### 💡 Local alternatives
+## Launching JupyterLab
+
+At this point, you're ready to launch JupyterLab by running the `jupyter lab` command. By default, JupyterLab will only send 1,000 messages (drawing instructions) per second to your web browser. Complex animations require lots of drawing instructions, so you'll probably need to raise this limit. Each time you open your terminal, run the following commands to start coding with ipycc:
+
+On Linux/macOS:
+```sh
+cd ipycc
+source venv/bin/activate
+jupyter lab --ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e10
+```
+
+On Windows:
+```powershell
+cd ipycc
+venv\Scripts\activate
+jupyter lab --ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e10
+```
+
+The command line argument `--ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e10` allows the Python kernel to send drawing instructions fast enough for most animations. Increase the value `1.0e10` if you see the message `IOPub message rate exceeded` appear in your notebook.
+
+## Alternatives
 
 If you're running ipycc locally, you may also be interested in [py5](https://py5coding.org/) which uses [Processing](https://processing) for drawing. py5 has advanced features that you may wish to explore at some point.
 
