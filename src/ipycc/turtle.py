@@ -410,14 +410,13 @@ def no_animation():
 
 
 def clearscreen():
-    """Delete all drawings from the screen.
+    """Delete all drawings and all turtles from the screen.
     
     Resets the now empty screen to its initial state with a white background.
-    Calling `clearscreen()` resets all turtles on the screen.
 
     **Example**
     ```python
-    from ipycc.turtle import Turtle, showscreen. clearscreen
+    from ipycc.turtle import Turtle, showscreen, clearscreen
 
     # Show the screen.
     showscreen()
@@ -434,6 +433,8 @@ def clearscreen():
     """
     for t in _SCREEN._turtles:
         t.clear()
+        t.hideturtle()
+    _SCREEN._turtles = []
     _SCREEN._sketch.background("white")
 
 
